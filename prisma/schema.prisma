@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+    ACTIVE
+    INACTIVE
+    PENDING
+}
+
+enum Active {
+    ENABLE
+    DISABLE
+}
+
+model users {
+    // Core Fields
+    user_id                Int         @id @default(autoincrement())
+    fullName               String?
+    phoneNumber            String?     @unique
+    code                   String?
+    codeRequestedAt        DateTime?
+    type                   Int         @default(1)
+    // Personal Information
+    address                String?     @db.Text
+    nationalCode           String?     @unique
+    age                    Int?
+    image                  String?
+    // Emergency & Health
+    phoneNumberEmergency   String?
+    underSupervisionDoctor Boolean?    @default(false)
+    diseaseRecords         Boolean?    @default(false)
+    // Club Specific Info
+    selectSport            Json?
+    selectBelt             Json?
+    history                String?     @db.Text
+    certificates           String?
+    prise                  Int?
+    // System Fields
+    status                 UserStatus? @default(PENDING)
+    active                 Active      @default(ENABLE)
+    createdAt              DateTime    @default(now())
+    updatedAt              DateTime    @updatedAt
+
+    @@map("users")
+}

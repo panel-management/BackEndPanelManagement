@@ -6,19 +6,18 @@ import {
   HttpCode,
   HttpStatus,
   Body,
-  UseGuards,
-  Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-import { AuthGuard } from '@nestjs/passport';
 import { CompleteRegistrationDto } from './dto/complete-registration.dto';
+import { Public } from './decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('send-otp')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe())
@@ -26,6 +25,7 @@ export class AuthController {
     return this.authService.requestOtp(requestOtpDto.phoneNumber);
   }
 
+  @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe())
@@ -36,6 +36,7 @@ export class AuthController {
     );
   }
 
+  @Public()
   @Post('registration')
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe())

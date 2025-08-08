@@ -36,13 +36,15 @@ model users {
     address                String?     @db.Text
     nationalCode           String?     @unique
     age                    Int?
+    birthDate              String?
     image                  String?
     // Emergency & Health
     phoneNumberEmergency   String?
     underSupervisionDoctor Boolean?    @default(false)
     diseaseRecords         Boolean?    @default(false)
     // Club Specific Info
-    selectSport            Json?
+    sportId                Int?
+    sport                  Sport?      @relation(fields: [sportId], references: [id])
     selectBelt             Json?
     history                String?     @db.Text
     certificates           String?
@@ -54,4 +56,10 @@ model users {
     updatedAt              DateTime    @updatedAt
 
     @@map("users")
+}
+
+model Sport {
+    id    Int     @id @default(autoincrement())
+    name  String  @unique
+    users users[]
 }

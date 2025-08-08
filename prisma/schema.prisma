@@ -26,7 +26,7 @@ enum Active {
 
 model users {
     // Core Fields
-    user_id                Int         @id @default(autoincrement())
+    user_id                Int         @id @unique @default(autoincrement())
     fullName               String?
     phoneNumber            String?     @unique
     code                   String?

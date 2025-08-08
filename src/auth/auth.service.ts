@@ -85,7 +85,7 @@ export class AuthService {
   }
 
   async completeRegistration(dto: CompleteRegistrationDto) {
-    const { phoneNumber, code, fullName, nationalCode, selectSport } = dto;
+    const { phoneNumber, code, fullName, nationalCode, sportId } = dto;
     const user = await this.userService.findByPhoneNumber(phoneNumber);
 
     if (!user || user.code !== dto.code) {
@@ -99,7 +99,7 @@ export class AuthService {
     const updateUser = await this.userService.updateProfile(user.user_id, {
       fullName,
       nationalCode,
-      selectSport,
+      sportId,
     });
     await this.userService.clearOtp(user.user_id);
     const payload = {

@@ -1,5 +1,6 @@
-import { IsJSON, IsNotEmpty, IsString } from 'class-validator';
+import { IsInt, IsNotEmpty, IsString } from 'class-validator';
 import { VerifyOtpDto } from './verify-otp.dto';
+import { Type } from 'class-transformer';
 
 export class CompleteRegistrationDto extends VerifyOtpDto {
   @IsString()
@@ -10,7 +11,8 @@ export class CompleteRegistrationDto extends VerifyOtpDto {
   @IsNotEmpty()
   nationalCode: string;
 
-  @IsJSON()
+  @IsInt({ message: 'شناسه ورزش باید یک عدد باشد' })
+  @Type(() => Number)
   @IsNotEmpty()
-  selectSport: string;
+  sportId: number;
 }

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { users } from '@prisma/client';
-import { CompleteRegistrationDto } from 'src/auth/dto/complete-registration.dto';
 
 @Injectable()
 export class UsersService {
@@ -31,8 +30,8 @@ export class UsersService {
     userId: number,
     profileData: {
       fullName: string;
-      nationalCode?: string;
-      selectSport?: string;
+      nationalCode: string;
+      sportId: number;
     },
   ): Promise<users> {
     return this.prismaService.users.update({
@@ -40,13 +39,13 @@ export class UsersService {
       data: {
         fullName: profileData.fullName,
         nationalCode: profileData.nationalCode,
-        selectSport: profileData.selectSport
-          ? JSON.parse(profileData.selectSport)
-          : undefined,
+        ...(profileData.sportId && {
+          sport: { connect: { id: profileData.sportId } },
+        }),
       },
     });
   }
-  
+
   async setOtpCode(userId: number, code: string): Promise<void> {
     await this.prismaService.users.update({
       where: { user_id: userId },

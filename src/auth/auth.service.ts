@@ -1,6 +1,5 @@
 import {
   ConflictException,
-  ForbiddenException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -75,6 +74,7 @@ export class AuthService {
     const payload = {
       sub: user.user_id,
       phone: user.phoneNumber,
+      type: user.type,
     };
     const accessToken = this.jwtService.sign(payload);
     return {

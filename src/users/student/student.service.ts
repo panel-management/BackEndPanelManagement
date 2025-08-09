@@ -2,11 +2,26 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { Prisma } from '@prisma/client';
 import { Role } from 'src/auth/enums/role.enum';
+import { UpdateStudentDto } from './dto/update-student.dto';
+
+type UpdatedStudentData = {
+  fullName: string | null;
+  nationalCode: string | null;
+  birthDate: string | null;
+  age: number | null;
+  phoneNumber: string | null;
+  phoneNumberEmergency: string | null;
+  address: string | null;
+  underSupervisionDoctor: boolean | null;
+  diseaseRecords: boolean | null;
+  selectBelt: Prisma.JsonValue;
+};
 
 @Injectable()
 export class StudentService {
@@ -34,6 +49,26 @@ export class StudentService {
       data: {
         users,
       },
+    };
+  }
+
+  async getById(studentId: number, masterId: number) {
+    const student = await this.prismaService.users.findUnique({
+      where: { user_id: studentId },
+      include: { sport: true },
+    });
+
+    if (!student || student.masterId !== masterId) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'هنرجویی با این مشخاصت یافت نشد',
+      });
+    }
+
+    return {
+      statusCode: 200,
+      message: 'هنرجو با موفقیت دریافت شد',
+      data: student,
     };
   }
 
@@ -86,7 +121,7 @@ export class StudentService {
       });
       return {
         statusCode: 201,
-        message: 'هنرجو با موفقعیت ایجاد شد',
+        message: 'هنرجو با موفقیت ایجاد شد',
         data: {
           newUser,
         },
@@ -112,5 +147,62 @@ export class StudentService {
       }
       throw error;
     }
+  }
+
+  async updateStudentById(
+    studentId: number,
+    masterId: number,
+    dto: UpdateStudentDto,
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: UpdatedStudentData;
+  }> {
+    await this.getById(studentId, masterId);
+    const updateStudent = await this.prismaService.users.update({
+      where: { user_id: studentId },
+      data: {
+        fullName: dto.fullName,
+        nationalCode: dto.nationalCode,
+        birthDate: dto.birthDate,
+        age: dto.age,
+        phoneNumber: dto.phoneNumber,
+        phoneNumberEmergency: dto.phoneNumberEmergency,
+        address: dto.address,
+        underSupervisionDoctor: dto.underSupervisionDoctor,
+        diseaseRecords: dto.diseaseRecords,
+        selectBelt: dto.selectBelt ? JSON.parse(dto.selectBelt) : undefined,
+      },
+      select: {
+        fullName: true,
+        nationalCode: true,
+        birthDate: true,
+        age: true,
+        phoneNumber: true,
+        phoneNumberEmergency: true,
+        address: true,
+        underSupervisionDoctor: true,
+        diseaseRecords: true,
+        selectBelt: true,
+      },
+    });
+    return {
+      statusCode: 200,
+      message: 'پروفایل با موفقیت بروزرسانی شد',
+      data: updateStudent,
+    };
+  }
+
+  async deleteStudentById(
+    studentId: number,
+    masterId: number,
+  ): Promise<{ statusCode: number; message: string }> {
+    await this.getById(studentId, masterId);
+
+    await this.prismaService.users.delete({
+      where: { user_id: studentId },
+    });
+
+    return { statusCode: 200, message: 'هنرجو با موفقیت حذف شد' };
   }
 }

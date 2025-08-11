@@ -64,7 +64,8 @@ model users {
 }
 
 model Sport {
-    id    Int     @id @default(autoincrement())
-    name  String  @unique
-    users users[]
+    id            Int     @id @unique @default(autoincrement())
+    name          String  @unique
+    users         users[]
+    hasBeltSystem Boolean @default(false)
 }

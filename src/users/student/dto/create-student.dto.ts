@@ -5,7 +5,7 @@ import {
   IsOptional,
   IsInt,
   IsBoolean,
-  IsJSON,
+  IsArray,
 } from 'class-validator';
 
 export class CreateStudentDto {
@@ -47,7 +47,8 @@ export class CreateStudentDto {
   @IsOptional()
   diseaseRecords?: boolean;
 
-  @IsJSON({ message: 'کمربند ها باید به صورت یک رشته json باشند' })
+  @IsArray()
+  @IsInt({ each: true, message: 'هر شناسه کمربند باید یک عدد باشد' })
   @IsOptional()
-  selectBelt: string;
+  beltIds?: number[];
 }

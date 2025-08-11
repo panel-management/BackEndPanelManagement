@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateStudentDto } from './dto/create-student.dto';
-import { Prisma } from '@prisma/client';
+import { Belt, Prisma } from '@prisma/client';
 import { Role } from 'src/auth/enums/role.enum';
 import { UpdateStudentDto } from './dto/update-student.dto';
 
@@ -21,7 +21,8 @@ type UpdatedStudentData = {
   address: string | null;
   underSupervisionDoctor: boolean | null;
   diseaseRecords: boolean | null;
-  selectBelt: Prisma.JsonValue;
+  achievedBelts: Belt[];
+  currentBelt: Belt | null;
 };
 
 @Injectable()
@@ -34,7 +35,8 @@ export class StudentService {
       select: {
         user_id: true,
         fullName: true,
-        selectBelt: true,
+        currentBelt: true,
+        achievedBelts: true,
         status: true,
         sport: true,
         createdAt: true,
@@ -47,9 +49,7 @@ export class StudentService {
     return {
       statusCode: 200,
       message: 'هنرجو ها با موفقیت دریافت شد',
-      data: {
-        users,
-      },
+      data: users,
     };
   }
 
@@ -82,11 +82,10 @@ export class StudentService {
       if (!masterSport || !masterSport.sportId) {
         throw new ForbiddenException({
           statusCode: 403,
-          message:
-            'برای ساخت هنرجو، شما به عنوان مربی باید ابتدا رشته ورزشی خود را در پروفایل مشخص کنید',
+          message: 'شما به عنوان مربی باید ابتدا رشته ورزشی خود را مشخص کنید',
         });
       }
-      if (masterSport.sport?.hasBeltSystem && !dto.selectBelt) {
+      if (masterSport.sport?.hasBeltSystem && !dto.beltIds) {
         throw new BadRequestException({
           statusCode: 400,
           message: `برای رشته ورزشی ${masterSport.sport.name} انتخاب کمربند الزامی است`,
@@ -103,7 +102,12 @@ export class StudentService {
           address: dto.address,
           underSupervisionDoctor: dto.underSupervisionDoctor,
           diseaseRecords: dto.diseaseRecords,
-          ...(dto.selectBelt && { selectBelt: JSON.parse(dto.selectBelt) }),
+          achievedBelts: {
+            connect: dto.beltIds?.map((id) => ({ id })),
+          },
+          currentBelt: dto.beltIds?.[0]
+            ? { connect: { id: dto.beltIds[0] } }
+            : undefined,
           sport: {
             connect: { id: masterSport.sportId },
           },
@@ -121,7 +125,8 @@ export class StudentService {
           address: true,
           underSupervisionDoctor: true,
           diseaseRecords: true,
-          selectBelt: true,
+          achievedBelts: true,
+          currentBelt: true,
           type: true,
           sport: true,
           createdAt: true,
@@ -177,7 +182,12 @@ export class StudentService {
         address: dto.address,
         underSupervisionDoctor: dto.underSupervisionDoctor,
         diseaseRecords: dto.diseaseRecords,
-        ...(dto.selectBelt && { selectBelt: JSON.parse(dto.selectBelt) }),
+        achievedBelts: {
+          connect: dto.beltIds?.map((id) => ({ id })),
+        },
+        currentBelt: dto.beltIds?.[0]
+          ? { connect: { id: dto.beltIds[0] } }
+          : undefined,
       },
       select: {
         user_id: true,
@@ -190,7 +200,8 @@ export class StudentService {
         address: true,
         underSupervisionDoctor: true,
         diseaseRecords: true,
-        selectBelt: true,
+        achievedBelts: true,
+        currentBelt: true,
       },
     });
     return {

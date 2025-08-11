@@ -1,8 +1,8 @@
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsInt,
-  IsJSON,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -45,7 +45,8 @@ export class UpdateStudentDto {
   @IsOptional()
   diseaseRecords?: boolean;
 
-  @IsJSON()
+  @IsArray()
+  @IsInt({ each: true, message: 'هر شناسه کمربند باید یک عدد باشد' })
   @IsOptional()
-  selectBelt?: string;
+  beltIds?: number[];
 }

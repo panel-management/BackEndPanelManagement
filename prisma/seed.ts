@@ -42,6 +42,34 @@ async function main() {
   }
 
   console.log('--- success process added sport  ---');
+
+  const beltsToSeed = [
+    'سفید',
+    'خاکستری',
+    'زرد',
+    'نارنجی',
+    'سبز',
+    'آبی',
+    'بنفش',
+    'قهوه‌ای',
+    'قرمز',
+    'قرمز/سیاه',
+    'قرمز/سفید',
+    'مشکی',
+    'صورتی',
+    'طلایی',
+    'نقره‌ای',
+  ];
+
+  for (const beltColor of beltsToSeed) {
+    await prisma.belt.upsert({
+      where: { color: beltColor },
+      update: {},
+      create: { color: beltColor },
+    });
+  }
+
+  console.log('--- success process added belt ---');
 }
 
 main()

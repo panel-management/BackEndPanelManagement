@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -76,12 +77,19 @@ export class StudentService {
     try {
       const masterSport = await this.prismaService.users.findUnique({
         where: { user_id: masterId },
+        include: { sport: true },
       });
       if (!masterSport || !masterSport.sportId) {
         throw new ForbiddenException({
           statusCode: 403,
           message:
             'برای ساخت هنرجو، شما به عنوان مربی باید ابتدا رشته ورزشی خود را در پروفایل مشخص کنید',
+        });
+      }
+      if (masterSport.sport?.hasBeltSystem && !dto.selectBelt) {
+        throw new BadRequestException({
+          statusCode: 400,
+          message: `برای رشته ورزشی ${masterSport.sport.name} انتخاب کمربند الزامی است`,
         });
       }
       const newUser = await this.prismaService.users.create({
@@ -95,7 +103,7 @@ export class StudentService {
           address: dto.address,
           underSupervisionDoctor: dto.underSupervisionDoctor,
           diseaseRecords: dto.diseaseRecords,
-          selectBelt: dto.selectBelt ? JSON.parse(dto.selectBelt) : undefined,
+          ...(dto.selectBelt && { selectBelt: JSON.parse(dto.selectBelt) }),
           sport: {
             connect: { id: masterSport.sportId },
           },
@@ -122,9 +130,7 @@ export class StudentService {
       return {
         statusCode: 201,
         message: 'هنرجو با موفقیت ایجاد شد',
-        data: {
-          newUser,
-        },
+        data: newUser,
       };
     } catch (error) {
       if (
@@ -171,9 +177,10 @@ export class StudentService {
         address: dto.address,
         underSupervisionDoctor: dto.underSupervisionDoctor,
         diseaseRecords: dto.diseaseRecords,
-        selectBelt: dto.selectBelt ? JSON.parse(dto.selectBelt) : undefined,
+        ...(dto.selectBelt && { selectBelt: JSON.parse(dto.selectBelt) }),
       },
       select: {
+        user_id: true,
         fullName: true,
         nationalCode: true,
         birthDate: true,

@@ -45,27 +45,36 @@ model users {
     // Club Specific Info
     sportId                Int?
     sport                  Sport?      @relation(fields: [sportId], references: [id])
-    selectBelt             Json?
+    achievedBelts          Belt[]      @relation("UserAchievedBelts")
     history                String?     @db.Text
     certificates           String?
     prise                  Int?
+    // student master
+    masterId               Int?
+    master                 users?      @relation("MasterToStudents", fields: [masterId], references: [user_id])
+    students               users[]     @relation("MasterToStudents")
+    // belt
+    currentBeltId          Int?
+    currentBelt            Belt?       @relation("UserCurrentBelt", fields: [currentBeltId], references: [id])
     // System Fields
     status                 UserStatus? @default(PENDING)
     active                 Active      @default(ENABLE)
     createdAt              DateTime    @default(now())
     updatedAt              DateTime    @updatedAt
 
-    // student master
-    masterId Int?
-    master   users?  @relation("MasterToStudents", fields: [masterId], references: [user_id])
-    students users[] @relation("MasterToStudents")
-
     @@map("users")
+}
+
+model Belt {
+    id                   Int     @id @unique @default(autoincrement())
+    color                String  @unique
+    achievedByUsers      users[] @relation("UserAchievedBelts")
+    currentlyHeldByUsers users[] @relation("UserCurrentBelt")
 }
 
 model Sport {
     id            Int     @id @unique @default(autoincrement())
     name          String  @unique
-    users         users[]
     hasBeltSystem Boolean @default(false)
+    users         users[]
 }

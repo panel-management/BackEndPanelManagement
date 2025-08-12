@@ -7,7 +7,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCoachDto } from './dto/create-coach.dto';
 import { Role } from 'src/auth/enums/role.enum';
-import { Prisma } from '@prisma/client';
+import { Active, Prisma, users } from '@prisma/client';
 import { UpdateCoachDto } from './dto/update-coach.dto';
 
 type UpdatedCoachData = {
@@ -17,6 +17,10 @@ type UpdatedCoachData = {
   history: string | null;
   certificates: string | null;
   image: string | null;
+};
+
+type ChangedStatusCoach = {
+  active: string;
 };
 
 @Injectable()
@@ -173,6 +177,33 @@ export class CoachService {
       statusCode: 200,
       message: 'پروفایل با موفقیت بروزرسانی شد',
       data: updateCoach,
+    };
+  }
+
+  async updateStatusCoach(
+    coachId: number,
+    masterId: number,
+    active: Active,
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: ChangedStatusCoach;
+  }> {
+    await this.getCoachById(coachId, masterId);
+    const changeStatus = await this.prismaService.users.update({
+      where: { user_id: coachId, type: Role.Coach },
+      data: {
+        active: active,
+      },
+      select: {
+        active: true,
+      },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'وضعیت مربی با موفقیت تغییر کرد',
+      data: changeStatus,
     };
   }
 

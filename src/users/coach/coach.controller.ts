@@ -20,6 +20,7 @@ import { Role } from 'src/auth/enums/role.enum';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CreateCoachDto } from './dto/create-coach.dto';
 import { UpdateCoachDto } from './dto/update-coach.dto';
+import { UpdateStatusUserDto } from './dto/updateStatus-coach.dto';
 
 @Controller('coach')
 export class CoachController {
@@ -65,6 +66,24 @@ export class CoachController {
   ) {
     const masterId = req.user.userId;
     return this.coachService.updateCoach(coachId, masterId, updateCoachDto);
+  }
+
+  @Put('/changeStatus/:id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  changeStatusCoach(
+    @Req() req,
+    @Param('id', ParseIntPipe) coachId: number,
+    @Body() updateStatusUserDto: UpdateStatusUserDto,
+  ) {
+    const masterId = req.user.userId;
+    return this.coachService.updateStatusCoach(
+      coachId,
+      masterId,
+      updateStatusUserDto.active,
+    );
   }
 
   @Delete('/:id')

@@ -31,7 +31,7 @@ export class StudentService {
 
   async findAll(masterId: number) {
     const users = await this.prismaService.users.findMany({
-      where: { masterId: masterId },
+      where: { masterId: masterId, type: Role.Student },
       select: {
         user_id: true,
         fullName: true,
@@ -59,7 +59,11 @@ export class StudentService {
       include: { sport: true },
     });
 
-    if (!student || student.masterId !== masterId) {
+    if (
+      !student ||
+      student.masterId !== masterId ||
+      student.type !== Role.Student
+    ) {
       throw new NotFoundException({
         statusCode: 404,
         message: 'هنرجویی با این مشخاصت یافت نشد',
@@ -171,7 +175,7 @@ export class StudentService {
   }> {
     await this.getById(studentId, masterId);
     const updateStudent = await this.prismaService.users.update({
-      where: { user_id: studentId },
+      where: { user_id: studentId, type: Role.Student },
       data: {
         fullName: dto.fullName,
         nationalCode: dto.nationalCode,
@@ -218,7 +222,7 @@ export class StudentService {
     await this.getById(studentId, masterId);
 
     await this.prismaService.users.delete({
-      where: { user_id: studentId },
+      where: { user_id: studentId, type: Role.Student },
     });
 
     return { statusCode: 200, message: 'هنرجو با موفقیت حذف شد' };

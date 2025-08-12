@@ -28,7 +28,7 @@ export class RolesGuard implements CanActivate {
     if (!user || user.type === undefined) {
       throw new ForbiddenException({
         statusCode: 403,
-        message: 'شما دسترسی لازم برای این بخش را ندارید.',
+        message: 'شما دسترسی لازم برای این بخش را ندارید',
       });
     }
 
@@ -40,7 +40,7 @@ export class RolesGuard implements CanActivate {
 
     throw new ForbiddenException({
       statusCode: 403,
-      message: 'شما دسترسی لازم برای این بخش را ندارید.',
+      message: 'شما دسترسی لازم برای این بخش را ندارید',
     });
   }
 }

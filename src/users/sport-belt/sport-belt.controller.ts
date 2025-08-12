@@ -34,7 +34,7 @@ export class SportBeltController {
 
   @Get('belt')
   @UseGuards(RolesGuard)
-  @Roles(Role.Admin, Role.Master, Role.coach)
+  @Roles(Role.Admin, Role.Master, Role.Coach)
   @HttpCode(HttpStatus.OK)
   getAllBelt() {
     return this.sportBeltService.getAllBelt();
@@ -42,7 +42,7 @@ export class SportBeltController {
 
   @Get('belt/:id')
   @UseGuards(RolesGuard)
-  @Roles(Role.Admin, Role.Master, Role.coach)
+  @Roles(Role.Admin, Role.Master, Role.Coach)
   @HttpCode(HttpStatus.OK)
   getBeltById(@Param('id', ParseIntPipe) beltId: number) {
     return this.sportBeltService.getBeltById(beltId);

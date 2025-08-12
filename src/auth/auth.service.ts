@@ -57,7 +57,7 @@ export class AuthService {
       throw new NotFoundException({
         statusCode: 404,
         message:
-          'کاربری با این مشخصات یافت نشد ثبت‌ نام شما کامل نیست. لطفا ابتدا ثبت‌نام کنید.',
+          'کاربری با این مشخصات یافت نشد ثبت‌ نام شما کامل نیست. لطفا ابتدا ثبت‌نام کنید',
       });
     }
 
@@ -89,11 +89,11 @@ export class AuthService {
     const user = await this.userService.findByPhoneNumber(phoneNumber);
 
     if (!user || user.code !== dto.code) {
-      throw new UnauthorizedException('شماره تلفن یا کد تایید نامعتبر است.');
+      throw new UnauthorizedException('شماره تلفن یا کد تایید نامعتبر است');
     }
 
     if (user.fullName) {
-      throw new ConflictException('این شماره تلفن قبلاً ثبت‌نام شده است.');
+      throw new ConflictException('این شماره تلفن قبلاً ثبت‌نام شده است');
     }
 
     const updateUser = await this.userService.updateProfile(user.user_id, {

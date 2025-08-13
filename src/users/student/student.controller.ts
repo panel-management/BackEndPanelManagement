@@ -36,7 +36,7 @@ export class StudentController {
 
   @Get('/:id')
   @UseGuards(RolesGuard)
-  @Roles(Role.Master)
+  @Roles(Role.Master, Role.Student)
   @HttpCode(HttpStatus.OK)
   getStudentById(@Req() req, @Param('id', ParseIntPipe) studentId: number) {
     const masterId = req.user.userId;

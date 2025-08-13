@@ -40,7 +40,7 @@ export class CoachController {
 
   @Get('/:id')
   @UseGuards(RolesGuard)
-  @Roles(Role.Master)
+  @Roles(Role.Master, Role.Coach)
   @HttpCode(HttpStatus.OK)
   getCoachById(@Req() req, @Param('id', ParseIntPipe) coachId: number) {
     const masterId = req.user.userId;

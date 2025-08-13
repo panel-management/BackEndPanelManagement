@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { IsNotEmpty, IsString, Matches } from 'class-validator';
 
 export class CreateCoachDto {
   @IsString()
@@ -21,8 +21,4 @@ export class CreateCoachDto {
   @IsString()
   @IsNotEmpty({ message: 'مدرک یا گواهینامه نمی‌تواند خالی باشد' })
   certificates: string;
-
-  @IsString()
-  @IsOptional()
-  image?: string;
 }

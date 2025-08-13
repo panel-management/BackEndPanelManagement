@@ -21,8 +21,4 @@ export class UpdateCoachDto {
   @IsString()
   @IsOptional()
   certificates?: string;
-
-  @IsString()
-  @IsOptional()
-  image?: string;
 }

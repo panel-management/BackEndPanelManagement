@@ -10,7 +10,9 @@ import {
   Post,
   Put,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -21,6 +23,7 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CreateCoachDto } from './dto/create-coach.dto';
 import { UpdateCoachDto } from './dto/update-coach.dto';
 import { UpdateStatusUserDto } from './dto/updateStatus-coach.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('coach')
 export class CoachController {
@@ -48,24 +51,36 @@ export class CoachController {
   @UseGuards(RolesGuard)
   @Roles(Role.Master)
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FileInterceptor('imageFile'))
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
-  createCoach(@Req() req, @Body() createCoachDto: CreateCoachDto) {
+  createCoach(
+    @Req() req,
+    @Body() createCoachDto: CreateCoachDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     const masterId = req.user.userId;
-    return this.coachService.createCoach(masterId, createCoachDto);
+    return this.coachService.createCoach(masterId, createCoachDto, file);
   }
 
   @Put('/:id')
   @UseGuards(RolesGuard)
   @Roles(Role.Master, Role.Coach)
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('imageFile'))
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   updateCoach(
     @Req() req,
     @Param('id', ParseIntPipe) coachId: number,
     @Body() updateCoachDto: UpdateCoachDto,
+    @UploadedFile() file: Express.Multer.File,
   ) {
     const masterId = req.user.userId;
-    return this.coachService.updateCoach(coachId, masterId, updateCoachDto);
+    return this.coachService.updateCoach(
+      coachId,
+      masterId,
+      updateCoachDto,
+      file,
+    );
   }
 
   @Put('/changeStatus/:id')

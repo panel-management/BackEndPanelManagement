@@ -24,43 +24,53 @@ enum Active {
     DISABLE
 }
 
+enum AttendanceStatus {
+    PRESENT
+    ABSENT
+    LATE
+    EXCUSED
+}
+
 model users {
     // Core Fields
-    user_id                Int         @id @unique @default(autoincrement())
+    user_id                Int          @id @unique @default(autoincrement())
     fullName               String?
-    phoneNumber            String?     @unique
+    phoneNumber            String?      @unique
     code                   String?
     codeRequestedAt        DateTime?
-    type                   Int         @default(1)
+    type                   Int          @default(1)
     // Personal Information
-    address                String?     @db.Text
-    nationalCode           String?     @unique
+    address                String?      @db.Text
+    nationalCode           String?      @unique
     age                    Int?
     birthDate              String?
     image                  String?
     // Emergency & Health
     phoneNumberEmergency   String?
-    underSupervisionDoctor Boolean?    @default(false)
-    diseaseRecords         Boolean?    @default(false)
+    underSupervisionDoctor Boolean?     @default(false)
+    diseaseRecords         Boolean?     @default(false)
     // Club Specific Info
     sportId                Int?
-    sport                  Sport?      @relation(fields: [sportId], references: [id])
-    achievedBelts          Belt[]      @relation("UserAchievedBelts")
-    history                String?     @db.Text
+    sport                  Sport?       @relation(fields: [sportId], references: [id])
+    achievedBelts          Belt[]       @relation("UserAchievedBelts")
+    history                String?      @db.Text
     certificates           String?
     prise                  Int?
     // student master
     masterId               Int?
-    master                 users?      @relation("MasterToStudents", fields: [masterId], references: [user_id])
-    students               users[]     @relation("MasterToStudents")
+    master                 users?       @relation("MasterToStudents", fields: [masterId], references: [user_id])
+    students               users[]      @relation("MasterToStudents")
     // belt
     currentBeltId          Int?
-    currentBelt            Belt?       @relation("UserCurrentBelt", fields: [currentBeltId], references: [id])
+    currentBelt            Belt?        @relation("UserCurrentBelt", fields: [currentBeltId], references: [id])
+    //attendance
+    studentAttendances     Attendance[] @relation("StudentAttendances")
+    MarkedAttendances      Attendance[] @relation("MarkedAttendances")
     // System Fields
-    status                 UserStatus? @default(PENDING)
-    active                 Active      @default(ENABLE)
-    createdAt              DateTime    @default(now())
-    updatedAt              DateTime    @updatedAt
+    status                 UserStatus?  @default(PENDING)
+    active                 Active       @default(ENABLE)
+    createdAt              DateTime     @default(now())
+    updatedAt              DateTime     @updatedAt
 
     @@map("users")
 }
@@ -77,4 +87,17 @@ model Sport {
     name          String  @unique
     hasBeltSystem Boolean @default(false)
     users         users[]
+}
+
+model Attendance {
+    id         Int               @id @unique @default(autoincrement())
+    date       DateTime          @db.Date
+    status     AttendanceStatus?
+    studentId  Int
+    student    users             @relation("StudentAttendances", fields: [studentId], references: [user_id], onDelete: Cascade)
+    markedById Int
+    markedBy   users             @relation("MarkedAttendances", fields: [markedById], references: [user_id], onDelete: Cascade)
+    createdAt  DateTime          @default(now())
+
+    @@unique([date, studentId])
 }

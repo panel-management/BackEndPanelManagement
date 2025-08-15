@@ -9,9 +9,12 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { PaymentsModule } from './payments/payments.module';
+import { AttendanceModule } from './attendance/attendance.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [jwtConfig],
@@ -24,6 +27,7 @@ import { PaymentsModule } from './payments/payments.module';
     UsersModule,
     AuthModule,
     PaymentsModule,
+    AttendanceModule,
   ],
   providers: [
     {

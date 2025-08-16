@@ -9,11 +9,13 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
 import { CompleteRegistrationDto } from './dto/complete-registration.dto';
+import { SmsServiceService } from 'src/sms-service/sms-service.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UsersService,
+    private readonly smsService: SmsServiceService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -39,14 +41,12 @@ export class AuthService {
       user = await this.userService.createUser(phoneNumber);
     }
 
-    await this.userService.setOtpWithTimestamp(user.user_id, otp);
+    await this.smsService.sendOtpCode(user.user_id, user.phoneNumber!, otp);
 
     return {
       statusCode: 200,
       message: 'کد تایید با موفقیت ارسال شد',
-      data: {
-        code: otp,
-      },
+      data: otp,
     };
   }
 
@@ -68,9 +68,8 @@ export class AuthService {
       });
     }
 
-    await this.userService.setOtpCode(user.user_id, '');
+    await this.smsService.clearOtp(user.user_id);
 
-    const isNewUser = !user.fullName;
     const payload = {
       sub: user.user_id,
       phone: user.phoneNumber,
@@ -80,7 +79,7 @@ export class AuthService {
     return {
       statusCode: 200,
       message: 'ورود با موفقیت انجام شد',
-      data: { accessToken, isNewUser },
+      data: accessToken,
     };
   }
 
@@ -101,7 +100,7 @@ export class AuthService {
       nationalCode,
       sportId,
     });
-    await this.userService.clearOtp(user.user_id);
+    await this.smsService.clearOtp(user.user_id);
     const payload = {
       sub: updateUser.user_id,
       phoneNumber: updateUser.phoneNumber,
@@ -111,7 +110,7 @@ export class AuthService {
     return {
       statusCode: 201,
       message: 'ثبت نام با موفقیت انجام شد',
-      data: { accessToken },
+      data: accessToken,
     };
   }
 }

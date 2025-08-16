@@ -45,28 +45,4 @@ export class UsersService {
       },
     });
   }
-
-  async setOtpCode(userId: number, code: string): Promise<void> {
-    await this.prismaService.users.update({
-      where: { user_id: userId },
-      data: { code },
-    });
-  }
-
-  async setOtpWithTimestamp(userId: number, code: string): Promise<void> {
-    await this.prismaService.users.update({
-      where: { user_id: userId },
-      data: {
-        code,
-        codeRequestedAt: new Date(),
-      },
-    });
-  }
-
-  async clearOtp(userId: number): Promise<void> {
-    await this.prismaService.users.update({
-      where: { user_id: userId },
-      data: { code: null },
-    });
-  }
 }

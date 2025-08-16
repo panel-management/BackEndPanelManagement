@@ -11,6 +11,8 @@ import { join } from 'path';
 import { PaymentsModule } from './payments/payments.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SmsServiceService } from './sms-service/sms-service.service';
+import { SmsServiceModule } from './sms-service/sms-service.module';
 
 @Module({
   imports: [
@@ -28,12 +30,14 @@ import { ScheduleModule } from '@nestjs/schedule';
     AuthModule,
     PaymentsModule,
     AttendanceModule,
+    SmsServiceModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    SmsServiceService,
   ],
 })
 export class AppModule {}

@@ -9,7 +9,7 @@ import {
   GetStudentHistoryDto,
   MarkAttendanceDto,
 } from './dto/create-attendance.dto';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { AttendanceStatus } from '@prisma/client';
 import { Role } from 'src/auth/enums/role.enum';
 
@@ -50,12 +50,7 @@ export class AttendanceService {
       const attendanceRecord = existingAttendances.find(
         (att) => att.studentId === user.user_id,
       );
-      let roles = 'نامشخص';
-      if (user.type === Role.Coach) {
-        roles = 'مربی';
-      } else if (user.type === Role.Student) {
-        roles = 'هنرجو';
-      }
+      const roles = user.type === Role.Coach ? 'مربی' : 'هنرجو';
       return {
         userId: user.user_id,
         fullName: user.fullName,
@@ -106,21 +101,29 @@ export class AttendanceService {
 
   async getStudentHistory(studentId: number, dto: GetStudentHistoryDto) {
     const { period } = dto;
-    let startDate: Date | undefined = undefined;
+    let startDate: Date | undefined;
     const now = new Date();
 
-    if (period === 'week') {
-      const dayOfWeek = now.getDay();
-      const firstDayOfWeek = new Date(now.setDate(now.getDate() - dayOfWeek));
-      startDate = new Date(
-        Date.UTC(
-          firstDayOfWeek.getFullYear(),
-          firstDayOfWeek.getMonth(),
-          firstDayOfWeek.getDate(),
-        ),
-      );
-    } else if (period === 'month') {
-      startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+    switch (period) {
+      case 'all':
+        startDate = undefined;
+        break;
+      case 'week':
+        const dayOfWeek = now.getDay();
+        const daysToSubtract = (dayOfWeek + 1) % 7;
+        now.setDate(now.getDate() - daysToSubtract);
+        startDate = new Date(
+          Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
+        );
+        break;
+      case 'month':
+        startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+        break;
+      default:
+        throw new BadRequestException({
+          statusCode: 400,
+          message: 'هیچ بازه زمانی برای این هنرجو یافت نشد',
+        });
     }
 
     const history = await this.prisma.attendance.findMany({
@@ -149,30 +152,87 @@ export class AttendanceService {
     };
   }
 
-  async getAttendanceSummary(markerId: number, dto: GetReportDto) {
+  async getAttendanceReport(masterId: number, dto: GetReportDto) {
     const { period } = dto;
     const now = new Date();
     let startDate: Date;
+    let name: string;
 
-    if (period === 'today') {
-      startDate = this.getStartOfTodayUTC();
-    } else if (period === 'week') {
-      const dayOfWeek = now.getDay();
-      const firstDayOfWeek = new Date(now.setDate(now.getDate() - dayOfWeek));
-      startDate = new Date(
-        Date.UTC(
-          firstDayOfWeek.getFullYear(),
-          firstDayOfWeek.getMonth(),
-          firstDayOfWeek.getDate(),
-        ),
-      );
-    } else {
-      startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+    switch (period) {
+      case 'today':
+        name = 'امروز';
+        startDate = this.getStartOfTodayUTC();
+        break;
+      case 'week':
+        name = 'این هفته';
+        const dayOfWeek = now.getDay();
+        const daysToSubtract = (dayOfWeek + 1) % 7;
+        now.setDate(now.getDate() - daysToSubtract);
+        startDate = new Date(
+          Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
+        );
+        break;
+      case 'month':
+        name = 'این ماه';
+        startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+        break;
+      default:
+        throw new BadRequestException({
+          statusCode: 400,
+          message: 'بازه زمانی نامعتبر است',
+        });
+    }
+
+    const getReport = await this.prisma.attendance.findMany({
+      where: {
+        markedById: masterId,
+        date: { gte: startDate, lte: new Date() },
+      },
+      include: { student: { select: { fullName: true, phoneNumber: true } } },
+      orderBy: { date: 'asc' },
+    });
+
+    return {
+      statusCode: 200,
+      message: `گزارش ${name} با موفقیت دریافت شد`,
+      data: getReport,
+    };
+  }
+
+  async getAttendanceSummary(masterId: number, dto: GetReportDto) {
+    const { period } = dto;
+    const now = new Date();
+    let startDate: Date;
+    let name: string;
+
+    switch (period) {
+      case 'today':
+        name = 'امروز';
+        startDate = this.getStartOfTodayUTC();
+        break;
+      case 'week':
+        name = 'این هفته';
+        const dayOfWeek = now.getDay();
+        const daysToSubtract = (dayOfWeek + 1) % 7;
+        now.setDate(now.getDate() - daysToSubtract);
+        startDate = new Date(
+          Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
+        );
+        break;
+      case 'month':
+        name = 'این ماه';
+        startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+        break;
+      default:
+        throw new BadRequestException({
+          statusCode: 400,
+          message: 'بازه زمانی نامعتبر است',
+        });
     }
 
     const records = await this.prisma.attendance.findMany({
       where: {
-        markedById: markerId,
+        markedById: masterId,
         date: {
           gte: startDate,
           lte: new Date(),
@@ -198,12 +258,40 @@ export class AttendanceService {
 
     return {
       statusCode: 200,
-      message: 'گزارش ها با موفقیت دریافت شد',
+      message: `گزارش ${name} با موفقیت دریافت شد`,
       data: summary,
     };
   }
 
-  // @Cron(CronExpression.EVERY_MINUTE)
+  async getAllSessions(masterId: number) {
+    const sessions = await this.prisma.attendance.findMany({
+      where: { markedById: masterId },
+      distinct: ['date'],
+      select: {
+        date: true,
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    if (sessions.length === 0) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'هیچ جلسه حضور غیاب یافت نشد',
+      });
+    }
+
+    const sessionDates = sessions.map((session) => session.date);
+
+    return {
+      statusCode: 200,
+      message: 'جلسات با موفقیت در یافت شد',
+      data: {
+        totalSessions: sessionDates.length,
+        sessions: sessionDates,
+      },
+    };
+  }
+
   @Cron('59 23 * * *')
   async handleDailyAbsenceMarking() {
     console.log(`Running daily absence marking job at ${new Date()}`);

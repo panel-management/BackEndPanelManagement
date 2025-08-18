@@ -33,12 +33,30 @@ export class AttendanceController {
     return this.attendanceService.getAttendanceListForDate(req.user.userId);
   }
 
+  @Get('history/:id')
+  @HttpCode(HttpStatus.OK)
+  getUserHistory(
+    @Param('id', ParseIntPipe) userId: number,
+    @Query() queryDto: GetStudentHistoryDto,
+  ) {
+    return this.attendanceService.getStudentHistory(userId, queryDto);
+  }
+
   @Post('mark')
   @HttpCode(HttpStatus.CREATED)
   markAttendance(@Req() req, @Body() markAttendanceDto: MarkAttendanceDto) {
     return this.attendanceService.markAttendance(
       req.user.userId,
       markAttendanceDto,
+    );
+  }
+
+  @Get('report')
+  @HttpCode(HttpStatus.OK)
+  getReport(@Req() req, @Query() queryDto: GetReportDto) {
+    return this.attendanceService.getAttendanceReport(
+      req.user.userId,
+      queryDto,
     );
   }
 
@@ -51,12 +69,9 @@ export class AttendanceController {
     );
   }
 
-  @Get('history/:id')
+  @Get('session')
   @HttpCode(HttpStatus.OK)
-  getUserHistory(
-    @Param('id', ParseIntPipe) userId: number,
-    @Query() queryDto: GetStudentHistoryDto,
-  ) {
-    return this.attendanceService.getStudentHistory(userId, queryDto);
+  getSessions(@Req() req) {
+    return this.attendanceService.getAllSessions(req.user.userId);
   }
 }

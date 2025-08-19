@@ -11,8 +11,6 @@ import {
   Put,
   Req,
   UseGuards,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { StudentService } from './student.service';
@@ -30,8 +28,7 @@ export class StudentController {
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   getAllStudent(@Req() req) {
-    const masterId = req.user.userId;
-    return this.studentService.findAll(masterId);
+    return this.studentService.findAll(req.user.userId);
   }
 
   @Get('/:id')
@@ -39,34 +36,29 @@ export class StudentController {
   @Roles(Role.Master, Role.Student)
   @HttpCode(HttpStatus.OK)
   getStudentById(@Req() req, @Param('id', ParseIntPipe) studentId: number) {
-    const masterId = req.user.userId;
-    return this.studentService.getById(studentId, masterId);
+    return this.studentService.getById(studentId, req.user.userId);
   }
 
   @Post()
   @UseGuards(RolesGuard)
   @Roles(Role.Master)
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   createStudent(@Req() req, @Body() createStudentDto: CreateStudentDto) {
-    const masterId = req.user.userId;
-    return this.studentService.createStudent(masterId, createStudentDto);
+    return this.studentService.createStudent(req.user.userId, createStudentDto);
   }
 
   @Put('/:id')
   @UseGuards(RolesGuard)
   @Roles(Role.Master, Role.Student)
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   updateStudent(
     @Req() req,
     @Param('id', ParseIntPipe) studentId: number,
     @Body() updateStudentDto: UpdateStudentDto,
   ) {
-    const masterId = req.user.userId;
     return this.studentService.updateStudentById(
       studentId,
-      masterId,
+      req.user.userId,
       updateStudentDto,
     );
   }
@@ -76,7 +68,6 @@ export class StudentController {
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   deleteStudent(@Req() req, @Param('id', ParseIntPipe) studentId: number) {
-    const masterId = req.user.userId;
-    return this.studentService.deleteStudentById(studentId, masterId);
+    return this.studentService.deleteStudentById(studentId, req.user.userId);
   }
 }

@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Post,
-  UsePipes,
-  ValidationPipe,
-  HttpCode,
-  HttpStatus,
-  Body,
-} from '@nestjs/common';
+import { Controller, Post, HttpCode, HttpStatus, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -20,7 +12,6 @@ export class AuthController {
   @Public()
   @Post('send-otp')
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe())
   requestOpt(@Body() requestOtpDto: RequestOtpDto) {
     return this.authService.requestOtp(requestOtpDto.phoneNumber);
   }
@@ -28,7 +19,6 @@ export class AuthController {
   @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe())
   verifyOpt(@Body() verifyOtpDto: VerifyOtpDto) {
     return this.authService.verifyOtp(
       verifyOtpDto.phoneNumber,
@@ -39,7 +29,6 @@ export class AuthController {
   @Public()
   @Post('registration')
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ValidationPipe())
   completeRegistration(@Body() completeRegistration: CompleteRegistrationDto) {
     return this.authService.completeRegistration(completeRegistration);
   }

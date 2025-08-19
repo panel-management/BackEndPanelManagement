@@ -13,8 +13,6 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { CoachService } from './coach.service';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -34,8 +32,7 @@ export class CoachController {
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   getAllCoach(@Req() req) {
-    const masterId = req.user.userId;
-    return this.coachService.getAllCoach(masterId);
+    return this.coachService.getAllCoach(req.user.userId);
   }
 
   @Get('/:id')
@@ -43,8 +40,7 @@ export class CoachController {
   @Roles(Role.Master, Role.Coach)
   @HttpCode(HttpStatus.OK)
   getCoachById(@Req() req, @Param('id', ParseIntPipe) coachId: number) {
-    const masterId = req.user.userId;
-    return this.coachService.getCoachById(coachId, masterId);
+    return this.coachService.getCoachById(coachId, req.user.userId);
   }
 
   @Post()
@@ -52,14 +48,12 @@ export class CoachController {
   @Roles(Role.Master)
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(FileInterceptor('imageFile'))
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   createCoach(
     @Req() req,
     @Body() createCoachDto: CreateCoachDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const masterId = req.user.userId;
-    return this.coachService.createCoach(masterId, createCoachDto, file);
+    return this.coachService.createCoach(req.user.userId, createCoachDto, file);
   }
 
   @Put('/:id')
@@ -67,17 +61,15 @@ export class CoachController {
   @Roles(Role.Master, Role.Coach)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('imageFile'))
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   updateCoach(
     @Req() req,
     @Param('id', ParseIntPipe) coachId: number,
     @Body() updateCoachDto: UpdateCoachDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const masterId = req.user.userId;
     return this.coachService.updateCoach(
       coachId,
-      masterId,
+      req.user.userId,
       updateCoachDto,
       file,
     );
@@ -87,16 +79,14 @@ export class CoachController {
   @UseGuards(RolesGuard)
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   changeStatusCoach(
     @Req() req,
     @Param('id', ParseIntPipe) coachId: number,
     @Body() updateStatusUserDto: UpdateStatusUserDto,
   ) {
-    const masterId = req.user.userId;
     return this.coachService.updateStatusCoach(
       coachId,
-      masterId,
+      req.user.userId,
       updateStatusUserDto.active,
     );
   }
@@ -106,7 +96,6 @@ export class CoachController {
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   deleteCoach(@Req() req, @Param('id', ParseIntPipe) coachId: number) {
-    const masterId = req.user.userId;
-    return this.coachService.deleteCoach(coachId, masterId);
+    return this.coachService.deleteCoach(coachId, req.user.userId);
   }
 }

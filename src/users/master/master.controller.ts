@@ -11,8 +11,6 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { MasterService } from './master.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -47,7 +45,6 @@ export class MasterController {
   @Roles(Role.Admin, Role.Master)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('imageFile'))
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   updateMaster(
     @Param('id', ParseIntPipe) masterId: number,
     @Body() updateMasterDto: UpdateMasterDto,
@@ -60,7 +57,6 @@ export class MasterController {
   @UseGuards(RolesGuard)
   @Roles(Role.Admin)
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   changeStatusMaster(
     @Param('id', ParseIntPipe) masterId: number,
     @Body() updateStatusUserDto: UpdateStatusUserDto,

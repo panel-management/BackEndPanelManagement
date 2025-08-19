@@ -19,6 +19,7 @@ import {
   GetReportDto,
   GetStudentHistoryDto,
   MarkAttendanceDto,
+  PaginationDto,
 } from './dto/create-attendance.dto';
 
 @Controller('attendance')
@@ -29,8 +30,11 @@ export class AttendanceController {
 
   @Get('list')
   @HttpCode(HttpStatus.OK)
-  getAttendanceList(@Req() req) {
-    return this.attendanceService.getAttendanceListForDate(req.user.userId);
+  getAttendanceList(@Req() req, @Query() paginationDto: PaginationDto) {
+    return this.attendanceService.getAttendanceListForDate(
+      req.user.userId,
+      paginationDto,
+    );
   }
 
   @Get('history/:id')

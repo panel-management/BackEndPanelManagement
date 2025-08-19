@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsString,
   IsOptional,
+  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AttendanceStatus } from '@prisma/client';
@@ -35,4 +36,18 @@ export class GetReportDto {
   @IsString()
   @IsEnum(['today', 'week', 'month'])
   period: 'today' | 'week' | 'month';
+}
+
+export class PaginationDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  limit?: number;
 }

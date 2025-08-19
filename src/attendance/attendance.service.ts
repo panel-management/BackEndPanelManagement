@@ -8,6 +8,7 @@ import {
   GetReportDto,
   GetStudentHistoryDto,
   MarkAttendanceDto,
+  PaginationDto,
 } from './dto/create-attendance.dto';
 import { Cron } from '@nestjs/schedule';
 import { AttendanceStatus } from '@prisma/client';
@@ -22,10 +23,24 @@ export class AttendanceService {
     return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   }
 
-  async getAttendanceListForDate(masterId: number) {
+  async getAttendanceListForDate(
+    masterId: number,
+    paginationDto: PaginationDto,
+  ) {
+    const { page = 1, limit = 15 } = paginationDto;
+    const skip = (page - 1) * limit;
     const targetDate = this.getStartOfTodayUTC();
 
+    const totalUsers = await this.prisma.users.count({
+      where: {
+        masterId: masterId,
+        type: { in: [Role.Coach, Role.Student] },
+      },
+    });
+
     const users = await this.prisma.users.findMany({
+      skip: skip,
+      take: limit,
       where: {
         masterId: masterId,
         type: { in: [Role.Coach, Role.Student] },
@@ -62,6 +77,12 @@ export class AttendanceService {
     return {
       statusCode: 200,
       message: 'لیست کاربران با موفقیت دریافت شد',
+      meta: {
+        total: totalUsers,
+        page: page,
+        limit: limit,
+        totalPage: Math.ceil(totalUsers / limit),
+      },
       data: attendanceList,
     };
   }

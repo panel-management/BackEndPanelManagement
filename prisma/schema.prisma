@@ -13,12 +13,6 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-enum UserStatus {
-    ACTIVE
-    INACTIVE
-    PENDING
-}
-
 enum Active {
     ENABLE
     DISABLE
@@ -35,13 +29,13 @@ model users {
     // Core Fields
     user_id                Int          @id @unique @default(autoincrement())
     fullName               String?
-    phoneNumber            String?      @unique
+    phoneNumber            String       @unique
     code                   String?
     codeRequestedAt        DateTime?
     type                   Int          @default(1)
     // Personal Information
     address                String?      @db.Text
-    nationalCode           String?      @unique
+    nationalCode           String       @unique
     age                    Int?
     birthDate              String?
     image                  String?
@@ -55,7 +49,6 @@ model users {
     achievedBelts          Belt[]       @relation("UserAchievedBelts")
     history                String?      @db.Text
     certificates           String?
-    prise                  Int?
     // student master
     masterId               Int?
     master                 users?       @relation("MasterToStudents", fields: [masterId], references: [user_id])
@@ -67,7 +60,6 @@ model users {
     studentAttendances     Attendance[] @relation("StudentAttendances")
     MarkedAttendances      Attendance[] @relation("MarkedAttendances")
     // System Fields
-    status                 UserStatus?  @default(PENDING)
     active                 Active       @default(ENABLE)
     createdAt              DateTime     @default(now())
     updatedAt              DateTime     @updatedAt

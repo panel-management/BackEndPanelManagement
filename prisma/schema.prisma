@@ -35,7 +35,7 @@ model users {
     type                   Int          @default(1)
     // Personal Information
     address                String?      @db.Text
-    nationalCode           String       @unique
+    nationalCode           String?       @unique
     age                    Int?
     birthDate              String?
     image                  String?

@@ -36,7 +36,6 @@ export class MasterService {
         certificates: true,
         image: true,
         active: true,
-        status: true,
         type: true,
         sport: true,
         createdAt: true,

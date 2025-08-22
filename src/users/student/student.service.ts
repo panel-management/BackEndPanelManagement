@@ -37,7 +37,7 @@ export class StudentService {
         fullName: true,
         currentBelt: true,
         achievedBelts: true,
-        status: true,
+        active: true,
         sport: true,
         createdAt: true,
         updatedAt: true,

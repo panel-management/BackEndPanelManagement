@@ -53,6 +53,12 @@ export class FinancialsService {
     };
   }
 
+  async findPlanById(planId: number) {
+    return this.prisma.plan.findUnique({
+      where: { id: planId },
+    });
+  }
+
   async createEquipmentTransaction(
     masterId: number,
     createEquipmentDto: CreateEquipmentDto,

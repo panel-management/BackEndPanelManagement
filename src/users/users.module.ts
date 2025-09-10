@@ -6,11 +6,18 @@ import { StudentModule } from './student/student.module';
 import { SportBeltModule } from './sport-belt/sport-belt.module';
 import { CoachModule } from './coach/coach.module';
 import { MasterModule } from './master/master.module';
+import { FinancialsModule } from 'src/financials/financials.module';
 
 @Module({
   providers: [UsersService, StudentService],
   exports: [UsersService],
   controllers: [StudentController],
-  imports: [StudentModule, SportBeltModule, CoachModule, MasterModule],
+  imports: [
+    StudentModule,
+    SportBeltModule,
+    CoachModule,
+    MasterModule,
+    FinancialsModule,
+  ],
 })
 export class UsersModule {}

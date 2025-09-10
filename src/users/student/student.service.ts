@@ -10,6 +10,7 @@ import { CreateStudentDto } from './dto/create-student.dto';
 import { Belt, Prisma } from '@prisma/client';
 import { Role } from 'src/auth/enums/role.enum';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import { FinancialsService } from 'src/financials/financials.service';
 
 type UpdatedStudentData = {
   fullName: string | null;
@@ -27,7 +28,10 @@ type UpdatedStudentData = {
 
 @Injectable()
 export class StudentService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly financialsService: FinancialsService,
+  ) {}
 
   async findAll(masterId: number) {
     const users = await this.prismaService.users.findMany({
@@ -95,6 +99,17 @@ export class StudentService {
           message: `برای رشته ورزشی ${masterSport.sport.name} انتخاب کمربند الزامی است`,
         });
       }
+      if (dto.planId) {
+        const planExists = await this.financialsService.findPlanById(
+          dto.planId,
+        );
+        if (!planExists) {
+          throw new NotFoundException({
+            statusCode: 404,
+            message: 'پلن شهریه انتخاب شده معتبر نمی‌باشد.',
+          });
+        }
+      }
       const newUser = await this.prismaService.users.create({
         data: {
           fullName: dto.fullName,
@@ -106,6 +121,7 @@ export class StudentService {
           address: dto.address,
           underSupervisionDoctor: dto.underSupervisionDoctor,
           diseaseRecords: dto.diseaseRecords,
+          plan: dto.planId ? { connect: { id: dto.planId } } : undefined,
           achievedBelts: {
             connect: dto.beltIds?.map((id) => ({ id })),
           },
@@ -132,6 +148,7 @@ export class StudentService {
           achievedBelts: true,
           currentBelt: true,
           type: true,
+          plan: true,
           sport: true,
           createdAt: true,
         },

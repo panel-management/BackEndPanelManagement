@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
   IsString,
@@ -51,4 +52,9 @@ export class CreateStudentDto {
   @IsInt({ each: true, message: 'هر شناسه کمربند باید یک عدد باشد' })
   @IsOptional()
   beltIds?: number[];
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  planId?: number;
 }

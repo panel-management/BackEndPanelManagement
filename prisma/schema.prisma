@@ -5,91 +5,188 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Active {
-    ENABLE
-    DISABLE
+  ENABLE
+  DISABLE
 }
 
 enum AttendanceStatus {
-    PRESENT
-    ABSENT
-    LATE
-    EXCUSED
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum TransactionType {
+  FEE
+  EQUIPMENT
+  OTHER
+}
+
+enum TransactionStatus {
+  PAID
+  UNPAID
+  PENDING
+  UPCOMING
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  ONLINE
+}
+
+enum SubscriptionPaymentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
 }
 
 model users {
-    // Core Fields
-    user_id                Int          @id @unique @default(autoincrement())
-    fullName               String?
-    phoneNumber            String       @unique
-    code                   String?
-    codeRequestedAt        DateTime?
-    type                   Int          @default(1)
-    // Personal Information
-    address                String?      @db.Text
-    nationalCode           String?       @unique
-    age                    Int?
-    birthDate              String?
-    image                  String?
-    // Emergency & Health
-    phoneNumberEmergency   String?
-    underSupervisionDoctor Boolean?     @default(false)
-    diseaseRecords         Boolean?     @default(false)
-    // Club Specific Info
-    sportId                Int?
-    sport                  Sport?       @relation(fields: [sportId], references: [id])
-    achievedBelts          Belt[]       @relation("UserAchievedBelts")
-    history                String?      @db.Text
-    certificates           String?
-    // student master
-    masterId               Int?
-    master                 users?       @relation("MasterToStudents", fields: [masterId], references: [user_id])
-    students               users[]      @relation("MasterToStudents")
-    // belt
-    currentBeltId          Int?
-    currentBelt            Belt?        @relation("UserCurrentBelt", fields: [currentBeltId], references: [id])
-    //attendance
-    studentAttendances     Attendance[] @relation("StudentAttendances")
-    MarkedAttendances      Attendance[] @relation("MarkedAttendances")
-    // System Fields
-    active                 Active       @default(ENABLE)
-    createdAt              DateTime     @default(now())
-    updatedAt              DateTime     @updatedAt
+  // Core Fields
+  user_id                Int          @id @unique @default(autoincrement())
+  fullName               String?
+  phoneNumber            String       @unique
+  code                   String?
+  codeRequestedAt        DateTime?
+  type                   Int          @default(1)
+  // Personal Information
+  address                String?      @db.Text
+  nationalCode           String?      @unique
+  age                    Int?
+  birthDate              String?
+  image                  String?
+  // Emergency & Health
+  phoneNumberEmergency   String?
+  underSupervisionDoctor Boolean?     @default(false)
+  diseaseRecords         Boolean?     @default(false)
+  // Club Specific Info
+  sportId                Int?
+  sport                  Sport?       @relation(fields: [sportId], references: [id])
+  achievedBelts          Belt[]       @relation("UserAchievedBelts")
+  history                String?      @db.Text
+  certificates           String?
+  // student master
+  masterId               Int?
+  master                 users?       @relation("MasterToStudents", fields: [masterId], references: [user_id])
+  students               users[]      @relation("MasterToStudents")
+  // belt
+  currentBeltId          Int?
+  currentBelt            Belt?        @relation("UserCurrentBelt", fields: [currentBeltId], references: [id])
+  //attendance
+  studentAttendances     Attendance[] @relation("StudentAttendances")
+  MarkedAttendances      Attendance[] @relation("MarkedAttendances")
+  // payments & plans
+  planId                 Int?
+  plan                   Plan?        @relation(fields: [planId], references: [id], onDelete: Restrict)
 
-    @@map("users")
+  studentTransactions  Transaction[]         @relation("StudentTransactions")
+  createdTransactions  Transaction[]         @relation("CreatedTransactions")
+  subscriptionPayments SubscriptionPayment[] @relation("MasterPayments")
+  confirmedStudentTxs  Transaction[]         @relation("ConfirmedByAdmin")
+  confirmedMasterSubs  SubscriptionPayment[] @relation("ConfirmedByAdmin")
+  // System Fields
+  active               Active                @default(ENABLE)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  @@map("users")
 }
 
 model Belt {
-    id                   Int     @id @unique @default(autoincrement())
-    color                String  @unique
-    achievedByUsers      users[] @relation("UserAchievedBelts")
-    currentlyHeldByUsers users[] @relation("UserCurrentBelt")
+  id                   Int     @id @unique @default(autoincrement())
+  color                String  @unique
+  achievedByUsers      users[] @relation("UserAchievedBelts")
+  currentlyHeldByUsers users[] @relation("UserCurrentBelt")
 }
 
 model Sport {
-    id            Int     @id @unique @default(autoincrement())
-    name          String  @unique
-    hasBeltSystem Boolean @default(false)
-    users         users[]
+  id            Int     @id @unique @default(autoincrement())
+  name          String  @unique
+  hasBeltSystem Boolean @default(false)
+  users         users[]
 }
 
 model Attendance {
-    id         Int               @id @unique @default(autoincrement())
-    date       DateTime          @db.Date
-    status     AttendanceStatus?
-    studentId  Int
-    student    users             @relation("StudentAttendances", fields: [studentId], references: [user_id], onDelete: Cascade)
-    markedById Int
-    markedBy   users             @relation("MarkedAttendances", fields: [markedById], references: [user_id], onDelete: Cascade)
-    createdAt  DateTime          @default(now())
+  id         Int               @id @unique @default(autoincrement())
+  date       DateTime          @db.Date
+  status     AttendanceStatus?
+  studentId  Int
+  student    users             @relation("StudentAttendances", fields: [studentId], references: [user_id], onDelete: Cascade)
+  markedById Int
+  markedBy   users             @relation("MarkedAttendances", fields: [markedById], references: [user_id], onDelete: Cascade)
+  createdAt  DateTime          @default(now())
 
-    @@unique([date, studentId])
+  @@unique([date, studentId])
+}
+
+model Plan {
+  id             Int     @id @unique @default(autoincrement())
+  name           String
+  description    String?
+  price          Decimal @db.Decimal(12, 2)
+  durationInDays Int
+  isDefault      Boolean @default(false)
+
+  assignedUsers users[]
+  transactions  Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Transaction {
+  id            Int               @id @unique @default(autoincrement())
+  type          TransactionType
+  amount        Decimal           @db.Decimal(12, 2)
+  description   String
+  status        TransactionStatus
+  dueDate       DateTime
+  paymentMethod PaymentMethod?
+  paymentDate   DateTime?
+
+  planId Int?
+  plan   Plan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  studentId Int
+  student   users @relation("StudentTransactions", fields: [studentId], references: [user_id], onDelete: Cascade)
+
+  creatorId Int
+  creator   users @relation("CreatedTransactions", fields: [creatorId], references: [user_id], onDelete: Restrict)
+
+  confirmerId Int?
+  confirmer   users? @relation("ConfirmedByAdmin", fields: [confirmerId], references: [user_id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SubscriptionPayment {
+  id              Int                       @id @unique @default(autoincrement())
+  amount          Decimal                   @db.Decimal(12, 2)
+  paymentDate     DateTime
+  trackingNumber  String
+  payerFullName   String
+  bankName        String
+  receiptImageUrl String
+  status          SubscriptionPaymentStatus @default(PENDING)
+
+  masterId Int
+  master   users @relation("MasterPayments", fields: [masterId], references: [user_id], onDelete: Cascade)
+
+  confirmerId Int?
+  confirmer   users? @relation("ConfirmedByAdmin", fields: [confirmerId], references: [user_id], onDelete: SetNull)
+
+  adminNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

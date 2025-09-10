@@ -1,0 +1,40 @@
+import { Module } from '@nestjs/common';
+import { FinancialsController } from './financials.controller';
+import { FinancialsService } from './financials.service';
+import { SmsServiceModule } from 'src/sms-service/sms-service.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+
+@Module({
+  imports: [
+    SmsServiceModule,
+    MulterModule.register({
+      storage: diskStorage({
+        destination: './uploads/receipt',
+        filename: (req, file, callback) => {
+          const name = req.body.payerFullName || 'unknown-user';
+          const sanitizedName = name.replace(/\s+/g, '-').toLowerCase();
+          const uniqueSuffix = Date.now();
+          const fileExt = extname(file.originalname);
+          const finalFileName = `${sanitizedName}-${uniqueSuffix}${fileExt}`;
+          callback(null, finalFileName);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|webp)$/)) {
+          return callback(
+            new Error('فقط فایل های تصویری (jepg, png, webp, jpg) مجاز هستند'),
+            false,
+          );
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 1024 * 1024 * 1 },
+    }),
+  ],
+  controllers: [FinancialsController],
+  providers: [FinancialsService],
+  exports: [FinancialsService],
+})
+export class FinancialsModule {}

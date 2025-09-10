@@ -8,11 +8,11 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-import { PaymentsModule } from './payments/payments.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SmsServiceService } from './sms-service/sms-service.service';
 import { SmsServiceModule } from './sms-service/sms-service.module';
+import { FinancialsModule } from './financials/financials.module';
 
 @Module({
   imports: [
@@ -28,9 +28,9 @@ import { SmsServiceModule } from './sms-service/sms-service.module';
     PrismaModule,
     UsersModule,
     AuthModule,
-    PaymentsModule,
     AttendanceModule,
     SmsServiceModule,
+    FinancialsModule,
   ],
   providers: [
     {

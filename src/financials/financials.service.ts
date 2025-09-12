@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -16,6 +17,8 @@ import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 import { CreateSubscriptionPaymentDto } from './dto/create-subscription-payment.dto';
 import { ReviewSubscriptionPaymentDto } from './dto/review-subscription-payment.dto';
 import { SmsServiceService } from 'src/sms-service/sms-service.service';
+import { CreateMasterPlanDto } from 'src/users/master/dto/create-master-plan.dto';
+import { UpdateMasterPlanDto } from 'src/users/master/dto/update-master-plan.dto';
 
 @Injectable()
 export class FinancialsService {
@@ -55,6 +58,12 @@ export class FinancialsService {
 
   async findPlanById(planId: number) {
     return this.prisma.plan.findUnique({
+      where: { id: planId },
+    });
+  }
+
+  async findMasterPlanById(planId: number) {
+    return this.prisma.masterPlan.findUnique({
       where: { id: planId },
     });
   }
@@ -515,6 +524,99 @@ export class FinancialsService {
       statusCode: 200,
       message: 'تاریخچه پرداخت ها با موفقیت دریافت شدند',
       data: payments,
+    };
+  }
+
+  // methods for admin to manage master plan
+
+  // create plan for master
+  async createMasterPlan(createDto: CreateMasterPlanDto) {
+    const createPlan = await this.prisma.masterPlan.create({ data: createDto });
+
+    return {
+      statusCode: 201,
+      message: 'پلن  با موفقیت ایجاد شد',
+      data: createPlan,
+    };
+  }
+
+  // list all plan active and disable
+  async findAllMasterPlansForAdmin() {
+    const planMaster = await this.prisma.masterPlan.findMany();
+
+    return {
+      statusCode: 200,
+      message: 'لیست پلن ها با موفقیت دریافت شد',
+      data: planMaster,
+    };
+  }
+
+  // list all plan active
+  async findActiveMasterPlans() {
+    const planMaster = await this.prisma.masterPlan.findMany({
+      where: { isActive: true },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'لیست پلن های با موفقیت یافت شد',
+      data: planMaster,
+    };
+  }
+
+  // update plan master in admin
+  async updateMasterPlan(planId: number, updateDto: UpdateMasterPlanDto) {
+    const findPlanMaster = await this.findMasterPlanById(planId);
+
+    if (!findPlanMaster) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'پلن یافت نشد لطف مجدد امتحان کنید',
+      });
+    }
+
+    const planMaster = await this.prisma.masterPlan.update({
+      where: { id: planId },
+      data: updateDto,
+    });
+
+    return {
+      statusCode: 200,
+      message: 'پلن با موفقیت اپدیت شد',
+      data: planMaster,
+    };
+  }
+
+  // delete plan master in admin
+  async deleteMasterPlan(planId: number) {
+    const assignedUsersCount = await this.prisma.users.count({
+      where: { masterPlanId: planId },
+    });
+
+    if (assignedUsersCount > 0) {
+      throw new ConflictException({
+        statusCode: 409,
+        message: `امکان حذف این پلن وجود ندارد زیرا ${assignedUsersCount} کاربر در حال حاضر از آن استفاده می‌کنند`,
+      });
+    }
+
+    const findPlanMaster = await this.findMasterPlanById(planId);
+
+    if (!findPlanMaster) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'پلن یافت نشد لطف مجدد امتحان کنید',
+      });
+    }
+
+    const planMaster = await this.prisma.masterPlan.delete({
+      where: { id: planId },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'پلن با موفقیت حذف شد',
+      data: planMaster,
     };
   }
 }

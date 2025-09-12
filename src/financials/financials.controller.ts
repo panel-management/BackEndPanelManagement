@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -23,6 +24,17 @@ import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 import { CreateSubscriptionPaymentDto } from './dto/create-subscription-payment.dto';
 import { ReviewSubscriptionPaymentDto } from './dto/review-subscription-payment.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CreateMasterPlanDto } from 'src/users/master/dto/create-master-plan.dto';
+import { UpdateMasterPlanDto } from 'src/users/master/dto/update-master-plan.dto';
+import { Request } from 'express';
+
+interface RequestWithUser extends Request {
+  user: {
+    user_id: number;
+    type: Role;
+    fullName: string;
+  };
+}
 
 @Controller('financials')
 @UseGuards(RolesGuard)
@@ -146,5 +158,49 @@ export class FinancialsController {
       req.user.userId,
       reviewDto,
     );
+  }
+
+  // crud for master plan or controller admin
+
+  @Post('master-plans')
+  @Roles(Role.Admin)
+  @HttpCode(HttpStatus.CREATED)
+  createMasterPlan(@Body() createDto: CreateMasterPlanDto) {
+    return this.financialsService.createMasterPlan(createDto);
+  }
+
+  @Get('master-plans')
+  @Roles(Role.Admin, Role.Master)
+  @HttpCode(HttpStatus.OK)
+  findAllMasterPlans(@Req() req: RequestWithUser) {
+    if (req.user.type === Role.Admin) {
+      return this.financialsService.findAllMasterPlansForAdmin();
+    }
+    return this.financialsService.findActiveMasterPlans();
+  }
+
+  @Get('master-plans/:id')
+  @Roles(Role.Admin)
+  @HttpCode(HttpStatus.OK)
+  findOneMasterPlan(@Param('id', ParseIntPipe) id: number) {
+    return this.financialsService.findMasterPlanById(id);
+  }
+
+  @Put('master-plans/:id')
+  @Roles(Role.Admin)
+  @HttpCode(HttpStatus.OK)
+  updateMasterPlan(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: UpdateMasterPlanDto,
+  ) {
+    return this.financialsService.updateMasterPlan(id, updateDto);
+  }
+
+  @Delete('master-plans/:id')
+  @Roles(Role.Admin)
+  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteMasterPlan(@Param('id', ParseIntPipe) id: number) {
+    return this.financialsService.deleteMasterPlan(id);
   }
 }

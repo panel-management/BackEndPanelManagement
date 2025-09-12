@@ -1,10 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Role } from 'src/auth/enums/role.enum';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateMasterDto } from './dto/update-master.dto';
-import { Active } from '@prisma/client';
+import { Active, MasterPlanType } from '@prisma/client';
 import { join } from 'path';
 import fs from 'fs';
+import { FinancialsService } from 'src/financials/financials.service';
+import { SmsServiceService } from 'src/sms-service/sms-service.service';
 
 type UpdatedMasterData = {
   fullName: string | null;
@@ -22,7 +28,11 @@ type ChangedStatusCoach = {
 
 @Injectable()
 export class MasterService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly financialsService: FinancialsService,
+    private readonly smsService: SmsServiceService,
+  ) {}
 
   async getAllMaster() {
     const getCoach = await this.prismaService.users.findMany({
@@ -76,6 +86,90 @@ export class MasterService {
       statusCode: 200,
       message: 'استاد با موفقیت یافت شد',
       data: getMaster,
+    };
+  }
+
+  // select plan just one master in admin
+  async assignPlanToMaster(masterId: number, planId: number) {
+    const [master, plan] = await Promise.all([
+      this.prismaService.users.findUnique({ where: { user_id: masterId } }),
+      this.financialsService.findMasterPlanById(planId),
+    ]);
+    let updatedMaster;
+    let message = '';
+
+    if (!master) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'استاد با این مشخصات یافت نشد',
+      });
+    }
+    if (!plan) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'پلن اشتراک یافت نشد',
+      });
+    }
+
+    if (plan.type === MasterPlanType.TRIAL) {
+      if (master.hasUsedTrial) {
+        throw new BadRequestException({
+          statusCode: 404,
+          message: 'کاربر گرامی شما قبلا پلن رایگان را استفاده کرده اید',
+        });
+      }
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + (plan.durationInDays || 0));
+
+      updatedMaster = await this.prismaService.users.update({
+        where: { user_id: masterId },
+        data: {
+          masterPlanId: planId,
+          trialEndsAt: trialEndsAt,
+          hasUsedTrial: true,
+        },
+      });
+
+      const formattedDate =
+        updatedMaster.trialEndsAt?.toLocaleDateString('fa-IR');
+      message = `سلام مدیر محترم ${master.fullName}
+پلن آزمایشی "${plan.name}" برای شما فعال شد.
+تاریخ انقضا: ${formattedDate}`;
+    } else {
+      updatedMaster = await this.prismaService.users.update({
+        where: { user_id: masterId },
+        data: { masterPlanId: planId, trialEndsAt: null },
+      });
+
+      message = `سلام مدیر محترم ${master.fullName}
+پلن ${plan.name} برای شما انتخاب شد لطفاً جهت نهایی‌سازی، هزینه آن را پرداخت نمایید.`;
+    }
+
+    if (master.phoneNumber && message) {
+      try {
+        await this.smsService.sendMessageToUser(master.phoneNumber, message);
+      } catch (error) {
+        console.error(
+          `ارسال پیامک فعال‌سازی پلن به ${master.phoneNumber} ناموفق بود:`,
+          error,
+        );
+      }
+    }
+    return {
+      statusCode: 200,
+      message: `کاربر گرامی پلن ${plan.name} با موفقیت فعال شد`,
+      data: updatedMaster,
+    };
+  }
+
+  // select plan just your self master
+  async selectPlanForSelf(masterId: number, planId: number) {
+    const planMaster = await this.assignPlanToMaster(masterId, planId);
+
+    return {
+      statusCode: 200,
+      message: 'پلن با موفقیت انتخاب شد',
+      data: planMaster,
     };
   }
 

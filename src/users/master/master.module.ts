@@ -4,9 +4,13 @@ import { MasterService } from './master.service';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { FinancialsModule } from 'src/financials/financials.module';
+import { SmsServiceModule } from 'src/sms-service/sms-service.module';
 
 @Module({
   imports: [
+    FinancialsModule,
+    SmsServiceModule,
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/masters',

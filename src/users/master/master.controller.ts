@@ -8,6 +8,7 @@ import {
   Param,
   ParseIntPipe,
   Put,
+  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -19,6 +20,7 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { UpdateMasterDto } from './dto/update-master.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateStatusUserDto } from './dto/updateStatus-master.dto';
+import { AssignMasterPlanDto } from './dto/assign-master-plan.dto';
 
 @Controller('master')
 export class MasterController {
@@ -64,6 +66,27 @@ export class MasterController {
     return this.masterService.updateStatusMaster(
       masterId,
       updateStatusUserDto.active,
+    );
+  }
+
+  // select plan just one master in admin
+  @Put('/:id/assign-plan')
+  @Roles(Role.Admin)
+  @HttpCode(HttpStatus.OK)
+  assignPlanByAdmin(
+    @Param('id', ParseIntPipe) masterId: number,
+    @Body() assignDto: AssignMasterPlanDto,
+  ) {
+    return this.masterService.assignPlanToMaster(masterId, assignDto.planId);
+  }
+
+  @Put('my-plan')
+  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
+  selectMyPlan(@Req() req, @Body() assignDto: AssignMasterPlanDto) {
+    return this.masterService.selectPlanForSelf(
+      req.user.userId,
+      assignDto.planId,
     );
   }
 

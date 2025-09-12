@@ -18,12 +18,18 @@ enum Active {
   DISABLE
 }
 
+// start enums for attendance
+
 enum AttendanceStatus {
   PRESENT
   ABSENT
   LATE
   EXCUSED
 }
+
+// end enums for attendance
+
+// start enums for payments
 
 enum TransactionType {
   FEE
@@ -49,6 +55,34 @@ enum SubscriptionPaymentStatus {
   CONFIRMED
   REJECTED
 }
+
+// end enums for payments
+
+// start enums for roles ticket
+
+enum TicketCategory {
+  TECHNICAL_ISSUE
+  FINANCIAL_AFFAIRS
+  FEATURE_REQUEST
+  GENERAL
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TicketStatus {
+  OPEN
+  PENDING
+  RESOLVED
+  CLOSED
+}
+
+// end enums for roles ticket
+
+// model for users
 
 model users {
   // Core Fields
@@ -93,6 +127,9 @@ model users {
   subscriptionPayments SubscriptionPayment[] @relation("MasterPayments")
   confirmedStudentTxs  Transaction[]         @relation("ConfirmedByAdmin")
   confirmedMasterSubs  SubscriptionPayment[] @relation("ConfirmedByAdmin")
+  // Relations for Support Tickets
+  tickets              Ticket[]              @relation("UserTickets")
+  sentMessages         TicketMessage[]       @relation("UserSentMessages")
   // System Fields
   active               Active                @default(ENABLE)
   createdAt            DateTime              @default(now())
@@ -115,6 +152,8 @@ model Sport {
   users         users[]
 }
 
+// model for attendance
+
 model Attendance {
   id         Int               @id @unique @default(autoincrement())
   date       DateTime          @db.Date
@@ -127,6 +166,8 @@ model Attendance {
 
   @@unique([date, studentId])
 }
+
+// models for payments and plans
 
 model Plan {
   id             Int     @id @unique @default(autoincrement())
@@ -189,4 +230,37 @@ model SubscriptionPayment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// model ticket
+
+model Ticket {
+  id    Int    @id @unique @default(autoincrement())
+  title String
+
+  category TicketCategory @default(GENERAL)
+  priority TicketPriority @default(MEDIUM)
+  status   TicketStatus   @default(OPEN)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId Int
+  user   users @relation("UserTickets", fields: [userId], references: [user_id], onDelete: Cascade)
+
+  messages TicketMessage[]
+}
+
+model TicketMessage {
+  id        Int      @id @unique @default(autoincrement())
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+
+  // Relations
+  ticketId Int
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  senderId Int
+  sender   users @relation("UserSentMessages", fields: [senderId], references: [user_id], onDelete: Cascade)
 }

@@ -13,6 +13,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SmsServiceService } from './sms-service/sms-service.service';
 import { SmsServiceModule } from './sms-service/sms-service.module';
 import { FinancialsModule } from './financials/financials.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { FinancialsModule } from './financials/financials.module';
     AttendanceModule,
     SmsServiceModule,
     FinancialsModule,
+    TicketsModule,
   ],
   providers: [
     {

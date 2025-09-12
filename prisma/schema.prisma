@@ -56,6 +56,11 @@ enum SubscriptionPaymentStatus {
   REJECTED
 }
 
+enum MasterPlanType {
+  TRIAL
+  PAID
+}
+
 // end enums for payments
 
 // start enums for roles ticket
@@ -127,13 +132,18 @@ model users {
   subscriptionPayments SubscriptionPayment[] @relation("MasterPayments")
   confirmedStudentTxs  Transaction[]         @relation("ConfirmedByAdmin")
   confirmedMasterSubs  SubscriptionPayment[] @relation("ConfirmedByAdmin")
+
+  masterPlanId Int?
+  masterPlan   MasterPlan?     @relation(fields: [masterPlanId], references: [id], onDelete: SetNull)
+  trialEndsAt  DateTime?
+  hasUsedTrial Boolean         @default(false)
   // Relations for Support Tickets
-  tickets              Ticket[]              @relation("UserTickets")
-  sentMessages         TicketMessage[]       @relation("UserSentMessages")
+  tickets      Ticket[]        @relation("UserTickets")
+  sentMessages TicketMessage[] @relation("UserSentMessages")
   // System Fields
-  active               Active                @default(ENABLE)
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
+  active       Active          @default(ENABLE)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
   @@map("users")
 }
@@ -179,6 +189,24 @@ model Plan {
 
   assignedUsers users[]
   transactions  Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MasterPlan {
+  id          Int     @id @unique @default(autoincrement())
+  name        String
+  description String?
+
+  type           MasterPlanType @default(PAID)
+  price          Decimal        @db.Decimal(12, 2)
+  durationInDays Int
+
+  features String[]
+  isActive Boolean  @default(true)
+
+  assignedMasters users[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

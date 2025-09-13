@@ -11,13 +11,14 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/auth/enums/role.enum';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { SportBeltService } from './sport-belt.service';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('sport-belt')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class SportBeltController {
   constructor(private readonly sportBeltService: SportBeltService) {}
 
   @Get('sport')
-  @UseGuards(RolesGuard)
   @Roles(Role.Admin, Role.Master)
   @HttpCode(HttpStatus.OK)
   getAllSport() {
@@ -25,7 +26,6 @@ export class SportBeltController {
   }
 
   @Get('sport/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Admin, Role.Master)
   @HttpCode(HttpStatus.OK)
   getSportById(@Param('id', ParseIntPipe) sportId: number) {
@@ -33,7 +33,6 @@ export class SportBeltController {
   }
 
   @Get('belt')
-  @UseGuards(RolesGuard)
   @Roles(Role.Admin, Role.Master, Role.Coach)
   @HttpCode(HttpStatus.OK)
   getAllBelt() {
@@ -41,7 +40,6 @@ export class SportBeltController {
   }
 
   @Get('belt/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Admin, Role.Master, Role.Coach)
   @HttpCode(HttpStatus.OK)
   getBeltById(@Param('id', ParseIntPipe) beltId: number) {

@@ -22,13 +22,14 @@ import { CreateCoachDto } from './dto/create-coach.dto';
 import { UpdateCoachDto } from './dto/update-coach.dto';
 import { UpdateStatusUserDto } from './dto/updateStatus-coach.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('coach')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class CoachController {
   constructor(private readonly coachService: CoachService) {}
 
   @Get()
-  @UseGuards(RolesGuard)
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   getAllCoach(@Req() req) {
@@ -36,7 +37,6 @@ export class CoachController {
   }
 
   @Get('/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Master, Role.Coach)
   @HttpCode(HttpStatus.OK)
   getCoachById(@Req() req, @Param('id', ParseIntPipe) coachId: number) {
@@ -44,7 +44,6 @@ export class CoachController {
   }
 
   @Post()
-  @UseGuards(RolesGuard)
   @Roles(Role.Master)
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(FileInterceptor('imageFile'))
@@ -57,7 +56,6 @@ export class CoachController {
   }
 
   @Put('/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Master, Role.Coach)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('imageFile'))
@@ -76,7 +74,6 @@ export class CoachController {
   }
 
   @Put('/changeStatus/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   changeStatusCoach(
@@ -92,7 +89,6 @@ export class CoachController {
   }
 
   @Delete('/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   deleteCoach(@Req() req, @Param('id', ParseIntPipe) coachId: number) {

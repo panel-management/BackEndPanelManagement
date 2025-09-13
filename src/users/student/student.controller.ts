@@ -18,13 +18,14 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/auth/enums/role.enum';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('student')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class StudentController {
   constructor(private readonly studentService: StudentService) {}
 
   @Get()
-  @UseGuards(RolesGuard)
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   getAllStudent(@Req() req) {
@@ -32,7 +33,6 @@ export class StudentController {
   }
 
   @Get('/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Master, Role.Student)
   @HttpCode(HttpStatus.OK)
   getStudentById(@Req() req, @Param('id', ParseIntPipe) studentId: number) {
@@ -40,7 +40,6 @@ export class StudentController {
   }
 
   @Post()
-  @UseGuards(RolesGuard)
   @Roles(Role.Master)
   @HttpCode(HttpStatus.CREATED)
   createStudent(@Req() req, @Body() createStudentDto: CreateStudentDto) {
@@ -48,7 +47,6 @@ export class StudentController {
   }
 
   @Put('/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Master, Role.Student)
   @HttpCode(HttpStatus.OK)
   updateStudent(
@@ -64,7 +62,6 @@ export class StudentController {
   }
 
   @Delete('/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   deleteStudent(@Req() req, @Param('id', ParseIntPipe) studentId: number) {

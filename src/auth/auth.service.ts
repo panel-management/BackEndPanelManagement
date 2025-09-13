@@ -92,7 +92,7 @@ export class AuthService {
     }
 
     if (user.fullName) {
-      throw new ConflictException('این شماره تلفن قبلاً ثبت‌نام شده است');
+      throw new ConflictException('این شماره تلفن قبلاً ثبت‌ نام شده است');
     }
 
     const updateUser = await this.userService.updateProfile(user.user_id, {
@@ -100,7 +100,21 @@ export class AuthService {
       nationalCode,
       sportId,
     });
+
     await this.smsService.clearOtp(user.user_id);
+
+    const message = `سلام مدیر محترم ${fullName}
+    ثبت نام شما با موفقیت انجام شد لطف برای استفاده از پنل باشگاه هوشمند اطلاعات خود را تکمیل کنید✅`;
+
+    try {
+      await this.smsService.sendMessageToUser(phoneNumber, message);
+    } catch (error) {
+      console.error(
+        `ارسال پیامک خوش آمدگویی به ${phoneNumber} ناموفق بود:`,
+        error,
+      );
+    }
+
     const payload = {
       sub: updateUser.user_id,
       phoneNumber: updateUser.phoneNumber,

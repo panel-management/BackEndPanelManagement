@@ -21,13 +21,14 @@ import { UpdateMasterDto } from './dto/update-master.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateStatusUserDto } from './dto/updateStatus-master.dto';
 import { AssignMasterPlanDto } from './dto/assign-master-plan.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('master')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class MasterController {
   constructor(private readonly masterService: MasterService) {}
 
   @Get()
-  @UseGuards(RolesGuard)
   @Roles(Role.Admin)
   @HttpCode(HttpStatus.OK)
   getAllMaster() {
@@ -35,7 +36,6 @@ export class MasterController {
   }
 
   @Get('/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Admin, Role.Master)
   @HttpCode(HttpStatus.OK)
   getMasterById(@Param('id', ParseIntPipe) masterId: number) {
@@ -43,7 +43,6 @@ export class MasterController {
   }
 
   @Put('/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Admin, Role.Master)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('imageFile'))
@@ -56,7 +55,6 @@ export class MasterController {
   }
 
   @Put('/changeStatus/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Admin)
   @HttpCode(HttpStatus.OK)
   changeStatusMaster(
@@ -91,7 +89,6 @@ export class MasterController {
   }
 
   @Delete('/:id')
-  @UseGuards(RolesGuard)
   @Roles(Role.Admin)
   @HttpCode(HttpStatus.OK)
   deleteMaster(@Param('id', ParseIntPipe) masterId: number) {

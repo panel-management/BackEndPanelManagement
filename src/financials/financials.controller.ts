@@ -27,6 +27,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateMasterPlanDto } from 'src/users/master/dto/create-master-plan.dto';
 import { UpdateMasterPlanDto } from 'src/users/master/dto/update-master-plan.dto';
 import { Request } from 'express';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 interface RequestWithUser extends Request {
   user: {
@@ -37,7 +38,7 @@ interface RequestWithUser extends Request {
 }
 
 @Controller('financials')
-@UseGuards(RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class FinancialsController {
   constructor(private readonly financialsService: FinancialsService) {}
 

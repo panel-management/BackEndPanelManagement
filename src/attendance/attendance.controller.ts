@@ -21,9 +21,10 @@ import {
   MarkAttendanceDto,
   PaginationDto,
 } from './dto/create-attendance.dto';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 
 @Controller('attendance')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.Master)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}

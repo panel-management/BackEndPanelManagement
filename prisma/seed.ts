@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { Active, PrismaClient } from '@prisma/client';
+import { Role } from '../src/auth/enums/role.enum';
 
 const prisma = new PrismaClient();
 
@@ -70,6 +71,27 @@ async function main() {
   }
 
   console.log('--- success process added belt ---');
+
+  const adminPhoneNumber = '09025672263';
+  const adminNationalCode = '0927189135';
+
+  await prisma.users.upsert({
+    where: { phoneNumber: adminPhoneNumber },
+    update: {},
+    create: {
+      phoneNumber: adminPhoneNumber,
+      fullName: 'ادمین',
+      nationalCode: adminNationalCode,
+      type: Role.Admin,
+      active: Active.ENABLE,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  console.log(
+    `--- create successfully admin system by ${adminPhoneNumber} ---`,
+  );
 }
 
 main()

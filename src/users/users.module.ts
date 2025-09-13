@@ -10,12 +10,14 @@ import { FinancialsModule } from 'src/financials/financials.module';
 import { ClubProfileService } from './club-profile/club-profile.service';
 import { ClubProfileController } from './club-profile/club-profile.controller';
 import { ClubProfileModule } from './club-profile/club-profile.module';
+import { SmsServiceModule } from 'src/sms-service/sms-service.module';
 
 @Module({
   providers: [UsersService, StudentService, ClubProfileService],
   exports: [UsersService],
   controllers: [StudentController, ClubProfileController],
   imports: [
+    SmsServiceModule,
     StudentModule,
     SportBeltModule,
     CoachModule,

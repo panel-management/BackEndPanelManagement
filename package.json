@@ -36,6 +36,7 @@
     "compression": "^1.8.1",
     "helmet": "^8.1.0",
     "multer": "^2.0.2",
+    "nestjs-throttler": "^0.3.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",

@@ -7,17 +7,21 @@ import { SportBeltModule } from './sport-belt/sport-belt.module';
 import { CoachModule } from './coach/coach.module';
 import { MasterModule } from './master/master.module';
 import { FinancialsModule } from 'src/financials/financials.module';
+import { ClubProfileService } from './club-profile/club-profile.service';
+import { ClubProfileController } from './club-profile/club-profile.controller';
+import { ClubProfileModule } from './club-profile/club-profile.module';
 
 @Module({
-  providers: [UsersService, StudentService],
+  providers: [UsersService, StudentService, ClubProfileService],
   exports: [UsersService],
-  controllers: [StudentController],
+  controllers: [StudentController, ClubProfileController],
   imports: [
     StudentModule,
     SportBeltModule,
     CoachModule,
     MasterModule,
     FinancialsModule,
+    ClubProfileModule,
   ],
 })
 export class UsersModule {}

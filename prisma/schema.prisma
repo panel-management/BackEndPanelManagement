@@ -133,17 +133,19 @@ model users {
   confirmedStudentTxs  Transaction[]         @relation("ConfirmedByAdmin")
   confirmedMasterSubs  SubscriptionPayment[] @relation("ConfirmedByAdmin")
 
-  masterPlanId Int?
-  masterPlan   MasterPlan?     @relation(fields: [masterPlanId], references: [id], onDelete: SetNull)
-  trialEndsAt  DateTime?
-  hasUsedTrial Boolean         @default(false)
+  masterPlanId      Int?
+  masterPlan        MasterPlan?        @relation(fields: [masterPlanId], references: [id], onDelete: SetNull)
+  trialEndsAt       DateTime?
+  hasUsedTrial      Boolean            @default(false)
   // Relations for Support Tickets
-  tickets      Ticket[]        @relation("UserTickets")
-  sentMessages TicketMessage[] @relation("UserSentMessages")
+  tickets           Ticket[]           @relation("UserTickets")
+  sentMessages      TicketMessage[]    @relation("UserSentMessages")
+  // Club Profile Info
+  instructorProfile InstructorProfile?
   // System Fields
-  active       Active          @default(ENABLE)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  active            Active             @default(ENABLE)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   @@map("users")
 }
@@ -273,7 +275,6 @@ model Ticket {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   userId Int
   user   users @relation("UserTickets", fields: [userId], references: [user_id], onDelete: Cascade)
 
@@ -285,10 +286,30 @@ model TicketMessage {
   text      String   @db.Text
   createdAt DateTime @default(now())
 
-  // Relations
   ticketId Int
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   senderId Int
   sender   users @relation("UserSentMessages", fields: [senderId], references: [user_id], onDelete: Cascade)
+}
+
+// ClubProfile
+model InstructorProfile {
+  id     Int   @id @unique @default(autoincrement())
+  userId Int   @unique
+  user   users @relation(fields: [userId], references: [user_id])
+
+  clubName        String?
+  activityType    String?
+  clubAddress     String?
+  aboutClub       String?   @db.Text
+  clubPhoneNumber String?
+  foundationDate  DateTime?
+  goal            String?   @db.Text
+  socialNetworks  Json?
+
+  isProfileComplete Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

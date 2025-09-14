@@ -1,0 +1,12 @@
+services:
+  prod:
+    container_name: club_panel_prod
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production

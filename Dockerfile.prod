@@ -7,9 +7,8 @@ WORKDIR /usr/src/app
 # copy file package.json
 COPY package*.json ./
 
-# install pnpm and dependencies
-RUN npm install -g pnpm
-RUN pnpm install
+# install dependencies
+RUN npm install
 
 # copy the  rest of the application
 COPY . .
@@ -18,7 +17,7 @@ COPY . .
 RUN npx prisma generate
 
 # building project
-RUN pnpm build
+RUN npm run build
 
 # ---- Production Stage ----
 FROM node:20-alpine AS production
@@ -29,13 +28,10 @@ WORKDIR /usr/src/app
 # copy file package.json
 COPY package*.json ./
 
-# install pnpm and dependencies
-RUN npm install -g pnpm
-RUN pnpm install --prod
-
 # copy file dist and prisma
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/prisma ./prisma
+COPY --from=builder /usr/src/app/node_modules ./node_modules
 
 # generate file prisma
 RUN npx prisma generate
@@ -43,7 +39,9 @@ RUN npx prisma generate
 # remove folder src
 RUN rm -rf ./src
 
+# running script entrypoint
+COPY entrypoint.sh ./
+RUN chmod +x entrypoint.sh
+
 # running the app and generate database
-CMD npx prisma migrate deploy && \
-    npx prisma db seed && \
-    pnpm docker:start:prod
+ENTRYPOINT ["./entrypoint.sh"]

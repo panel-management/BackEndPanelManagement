@@ -8,4 +8,5 @@ echo "Seeding database..."
 npx prisma db seed
 
 echo "Starting app..."
-exec node dist/src/main
+pm2-runtime dist/src/main.js -i max
+# exec node dist/src/main

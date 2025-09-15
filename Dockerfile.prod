@@ -30,6 +30,8 @@ WORKDIR /usr/src/app
 # copy file package.json
 COPY package*.json ./
 
+RUN npm install -g pm2
+
 # copy file dist and prisma
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/prisma ./prisma

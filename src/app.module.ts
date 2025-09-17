@@ -15,6 +15,7 @@ import { SmsServiceModule } from './sms-service/sms-service.module';
 import { FinancialsModule } from './financials/financials.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { LoggerModule } from './common/logger/logger.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     SmsServiceModule,
     FinancialsModule,
     TicketsModule,
+    LoggerModule,
   ],
   providers: [
     {

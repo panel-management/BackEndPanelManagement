@@ -24,7 +24,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - prod
+      - app-prod
     networks:
       - app_net
 

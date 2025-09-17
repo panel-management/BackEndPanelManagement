@@ -1,9 +1,10 @@
 services:
-  dev:
-    container_name: club_panel_dev
+  app-dev:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
+    image: dev:latest
+    container_name: club_panel_dev
     ports:
       - "8000:3000"
     volumes:

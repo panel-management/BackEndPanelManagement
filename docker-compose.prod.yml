@@ -1,9 +1,10 @@
 services:
-  prod:
-    container_name: club_panel_prod
+  app-prod:
     build:
       context: .
       dockerfile: Dockerfile.prod
+    image: prod:latest
+    container_name: club_panel_prod
     env_file:
       - .env
     environment:

@@ -12,14 +12,15 @@ import { Role } from 'src/auth/enums/role.enum';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { SportBeltService } from './sport-belt.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { Public } from 'src/auth/decorators/public.decorator';
 
 @Controller('sport-belt')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SportBeltController {
   constructor(private readonly sportBeltService: SportBeltService) {}
 
+  @Public()
   @Get('sport')
-  @Roles(Role.Admin, Role.Master)
   @HttpCode(HttpStatus.OK)
   getAllSport() {
     return this.sportBeltService.getAllSport();

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -16,6 +16,7 @@ import { FinancialsModule } from './financials/financials.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from './common/logger/logger.module';
+import { AllExceptionsMiddleware } from './common/filters/exception.middleware';
 
 @Module({
   imports: [
@@ -53,4 +54,10 @@ import { LoggerModule } from './common/logger/logger.module';
     SmsServiceService,
   ],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AllExceptionsMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

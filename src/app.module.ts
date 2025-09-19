@@ -16,7 +16,6 @@ import { FinancialsModule } from './financials/financials.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from './common/logger/logger.module';
-import { AllExceptionsMiddleware } from './common/filters/exception.middleware';
 
 @Module({
   imports: [
@@ -54,10 +53,4 @@ import { AllExceptionsMiddleware } from './common/filters/exception.middleware';
     SmsServiceService,
   ],
 })
-export class AppModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AllExceptionsMiddleware)
-      .forRoutes({ path: '*', method: RequestMethod.ALL });
-  }
-}
+export class AppModule {}

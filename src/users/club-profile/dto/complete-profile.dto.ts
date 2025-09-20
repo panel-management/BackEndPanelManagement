@@ -1,6 +1,5 @@
 import { Type } from 'class-transformer';
 import {
-  IsDateString,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -28,7 +27,7 @@ class SocialNetworksDto {
 
 export class CompleteProfileDto {
   @IsString({ message: 'نام باشگاه باید از نوع رشته باشد' })
-  @IsNotEmpty({ message: 'نام باشگاه نمی‌تواند خالی باشد' })
+  @IsNotEmpty({ message: 'نام باشگاه نمی‌ تواند خالی باشد' })
   clubName: string;
 
   @IsString()
@@ -47,9 +46,9 @@ export class CompleteProfileDto {
   @IsOptional()
   clubPhoneNumber?: string;
 
-  @IsDateString({}, { message: 'فرمت تاریخ تاسیس صحیح نیست' })
+  @IsString()
   @IsOptional()
-  foundationDate?: Date;
+  foundationDate?: string;
 
   @IsString()
   @IsOptional()

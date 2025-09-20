@@ -13,30 +13,39 @@ export class ClubProfileService {
   ) {}
 
   async completeInstructorProfile(masterId: number, dto: CompleteProfileDto) {
-    const instructorProfile = await this.prisma.instructorProfile.findUnique({
-      where: { userId: masterId },
-      include: {
-        user: {
-          select: {
-            phoneNumber: true,
-            fullName: true,
-          },
-        },
-      },
+    const user = await this.prisma.users.findUnique({
+      where: { user_id: masterId },
+      select: { phoneNumber: true, fullName: true },
     });
 
-    if (!instructorProfile) {
+    if (!user) {
       throw new NotFoundException({
         statusCode: 404,
-        message: 'پروفایل استاد با این مشخصات پیدا نشد',
+        message: 'کاربر با این مشخصات پیدا نشد',
       });
     }
 
-    const clubProfile = await this.prisma.instructorProfile.update({
+    const clubProfile = await this.prisma.instructorProfile.upsert({
       where: {
         userId: masterId,
       },
-      data: {
+      update: {
+        clubName: dto.clubName,
+        activityType: dto.activityType,
+        clubAddress: dto.clubAddress,
+        aboutClub: dto.aboutClub,
+        clubPhoneNumber: dto.clubPhoneNumber,
+        foundationDate: dto.foundationDate,
+        goal: dto.goal,
+        socialNetworks: dto.socialNetworks
+          ? (dto.socialNetworks as Prisma.JsonObject)
+          : Prisma.JsonNull,
+        isProfileComplete: true,
+      },
+      create: {
+        user: {
+          connect: { user_id: masterId },
+        },
         clubName: dto.clubName,
         activityType: dto.activityType,
         clubAddress: dto.clubAddress,
@@ -51,25 +60,23 @@ export class ClubProfileService {
       },
     });
 
-    if (instructorProfile.user.phoneNumber) {
-      const message = `مدیر محترم ${instructorProfile.user.fullName}
-      اطلاعات شما با موفقیت تکمیل شد حالا می توانید پلن خود را انتخاب و از پنل برای اداره باشگاه خود استفاده کنید با تشکر ما را انتخاب کردید.`;
+    if (user.phoneNumber) {
+      const message = `مدیر محترم ${user.fullName}
+اطلاعات شما با موفقیت تکمیل شد حالا می توانید پلن خود را انتخاب و از پنل برای اداره باشگاه خود استفاده کنید با تشکر ما را انتخاب کردید.`;
 
       try {
-        await this.smsService.sendMessageToUser(
-          instructorProfile.user.phoneNumber,
-          message,
-        );
+        await this.smsService.sendMessageToUser(user.phoneNumber, message);
+        console.log(`پیامک آزمایشی به ${user.phoneNumber}: ${message}`);
       } catch (error) {
         console.error(
-          `ارسال پیامک تکمیل پروفایل به ${instructorProfile.user.phoneNumber} ناموفق بود:`,
+          `ارسال پیامک تکمیل پروفایل به ${user.phoneNumber} ناموفق بود:`,
           error,
         );
       }
     }
 
     return {
-      statusCode: 200,
+      statusCode: 201,
       message: 'اطلاعات باشگاه با موفقیت تکمیل شد',
       data: clubProfile,
     };

@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
 import { CompleteRegistrationDto } from './dto/complete-registration.dto';
 import { SmsServiceService } from 'src/sms-service/sms-service.service';
+import { Role } from './enums/role.enum';
 
 @Injectable()
 export class AuthService {
@@ -88,17 +89,24 @@ export class AuthService {
     const user = await this.userService.findByPhoneNumber(phoneNumber);
 
     if (!user || user.code !== dto.code) {
-      throw new UnauthorizedException('شماره تلفن یا کد تایید نامعتبر است');
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: 'شماره تلفن یا کد تایید نامعتبر است',
+      });
     }
 
     if (user.fullName) {
-      throw new ConflictException('این شماره تلفن قبلاً ثبت‌ نام شده است');
+      throw new ConflictException({
+        statusCode: 409,
+        message: 'این شماره تلفن قبلاً ثبت‌ نام شده است'
+      });
     }
 
     const updateUser = await this.userService.updateProfile(user.user_id, {
       fullName,
       nationalCode,
       sportId,
+      type: Role.Master,
     });
 
     await this.smsService.clearOtp(user.user_id);

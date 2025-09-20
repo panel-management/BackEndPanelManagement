@@ -1,6 +1,5 @@
 import { Type } from 'class-transformer';
 import {
-  IsDateString,
   IsObject,
   IsOptional,
   IsString,
@@ -46,9 +45,9 @@ export class UpdateProfileDto {
   @IsOptional()
   clubPhoneNumber?: string;
 
-  @IsDateString({}, { message: 'فرمت تاریخ تاسیس صحیح نیست' })
+  @IsString()
   @IsOptional()
-  foundationDate?: Date;
+  foundationDate?: string;
 
   @IsString()
   @IsOptional()

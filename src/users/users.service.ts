@@ -32,6 +32,7 @@ export class UsersService {
       fullName: string;
       nationalCode: string;
       sportId: number;
+      type: number;
     },
   ): Promise<users> {
     return this.prismaService.users.update({
@@ -42,6 +43,7 @@ export class UsersService {
         ...(profileData.sportId && {
           sport: { connect: { id: profileData.sportId } },
         }),
+        type: profileData.type,
       },
     });
   }

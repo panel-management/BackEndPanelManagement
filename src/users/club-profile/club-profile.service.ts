@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CompleteProfileDto } from './dto/complete-profile.dto';
 import { Prisma } from '@prisma/client';
@@ -35,7 +39,11 @@ export class ClubProfileService {
   async completeInstructorProfile(masterId: number, dto: CompleteProfileDto) {
     const user = await this.prisma.users.findUnique({
       where: { user_id: masterId },
-      select: { phoneNumber: true, fullName: true },
+      select: { phoneNumber: true, fullName: true, user_id: true },
+    });
+
+    let clubProfile = await this.prisma.instructorProfile.findUnique({
+      where: { userId: user?.user_id },
     });
 
     if (!user) {
@@ -45,22 +53,43 @@ export class ClubProfileService {
       });
     }
 
-    const clubProfile = await this.prisma.instructorProfile.create({
-      data: {
-        user: { connect: { user_id: masterId } },
-        clubName: dto.clubName,
-        activityType: dto.activityType,
-        clubAddress: dto.clubAddress,
-        aboutClub: dto.aboutClub,
-        clubPhoneNumber: dto.clubPhoneNumber,
-        foundationDate: dto.foundationDate,
-        goal: dto.goal,
-        socialNetworks: dto.socialNetworks
-          ? (dto.socialNetworks as Prisma.JsonObject)
-          : Prisma.JsonNull,
-        isProfileComplete: true,
-      },
-    });
+    if (clubProfile?.isProfileComplete) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        message: 'پروفایل باشگاه شما قبلا تکمیل شده است',
+      });
+    }
+
+    if (!clubProfile) {
+      clubProfile = await this.prisma.instructorProfile.create({
+        data: {
+          user: { connect: { user_id: masterId } },
+          clubName: dto.clubName,
+          activityType: dto.activityType,
+          clubAddress: dto.clubAddress,
+          aboutClub: dto.aboutClub,
+          clubPhoneNumber: dto.clubPhoneNumber,
+          foundationDate: dto.foundationDate,
+          goal: dto.goal,
+          socialNetworks: dto.socialNetworks
+            ? (dto.socialNetworks as Prisma.JsonObject)
+            : Prisma.JsonNull,
+          isProfileComplete: true,
+        },
+      });
+    } else {
+      clubProfile = await this.prisma.instructorProfile.update({
+        where: {
+          userId: masterId,
+        },
+        data: {
+          ...dto,
+          socialNetworks: dto.socialNetworks
+            ? (dto.socialNetworks as Prisma.JsonObject)
+            : undefined,
+        },
+      });
+    }
 
     if (user.phoneNumber) {
       const message = `مدیر محترم ${user.fullName}

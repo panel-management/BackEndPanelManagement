@@ -11,6 +11,7 @@ import { ClubProfileService } from './club-profile/club-profile.service';
 import { ClubProfileController } from './club-profile/club-profile.controller';
 import { ClubProfileModule } from './club-profile/club-profile.module';
 import { SmsServiceModule } from 'src/sms-service/sms-service.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   providers: [UsersService, StudentService, ClubProfileService],
@@ -24,6 +25,7 @@ import { SmsServiceModule } from 'src/sms-service/sms-service.module';
     MasterModule,
     FinancialsModule,
     ClubProfileModule,
+    UserModule,
   ],
 })
 export class UsersModule {}

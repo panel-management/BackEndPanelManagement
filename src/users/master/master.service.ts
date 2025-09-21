@@ -6,7 +6,12 @@ import {
 import { Role } from 'src/auth/enums/role.enum';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateMasterDto } from './dto/update-master.dto';
-import { Active, MasterPlanType } from '@prisma/client';
+import {
+  Active,
+  MasterPlanType,
+  Prisma,
+  SubscriptionPaymentStatus,
+} from '@prisma/client';
 import { join } from 'path';
 import fs from 'fs';
 import { FinancialsService } from 'src/financials/financials.service';
@@ -26,6 +31,28 @@ type ChangedStatusCoach = {
   active: string;
 };
 
+type MasterWithAllDetails = Prisma.usersGetPayload<{
+  select: {
+    user_id: true;
+    fullName: true;
+    nationalCode: true;
+    phoneNumber: true;
+    history: true;
+    image: true;
+    active: true;
+    type: true;
+    sport: true;
+    students: true;
+    subscriptionPayments: {
+      orderBy: {
+        createdAt: 'desc';
+      };
+    };
+    createdAt: true;
+    updatedAt: true;
+  };
+}> & { paymentStatus: SubscriptionPaymentStatus | 'NO_PAYMENT' };
+
 @Injectable()
 export class MasterService {
   constructor(
@@ -35,7 +62,35 @@ export class MasterService {
   ) {}
 
   async getAllMaster() {
-    const getCoach = await this.prismaService.users.findMany({
+    // const getMaster = await this.prismaService.users.findMany({
+    //   where: { type: Role.Master },
+    //   select: {
+    //     user_id: true,
+    //     fullName: true,
+    //     nationalCode: true,
+    //     phoneNumber: true,
+    //     history: true,
+    //     image: true,
+    //     active: true,
+    //     type: true,
+    //     sport: true,
+    //     students: true,
+    //     subscriptionPayments: true,
+    //     createdAt: true,
+    //     updatedAt: true,
+    //   },
+    //   orderBy: {
+    //     createdAt: 'asc',
+    //   },
+    // });
+
+    // return {
+    //   statusCode: 200,
+    //   message: 'لیست استاد های باشگاه با موفقیت دریافت شد',
+    //   data: mastersWithStatus,
+    // };
+
+    const masters = await this.prismaService.users.findMany({
       where: { type: Role.Master },
       select: {
         user_id: true,
@@ -43,22 +98,42 @@ export class MasterService {
         nationalCode: true,
         phoneNumber: true,
         history: true,
-        certificates: true,
         image: true,
         active: true,
         type: true,
         sport: true,
+        students: true,
+        subscriptionPayments: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
         createdAt: true,
+        updatedAt: true,
       },
       orderBy: {
         createdAt: 'asc',
       },
     });
 
+    const mastersWithStatus: MasterWithAllDetails[] = masters.map((master) => {
+      const latestPayment = master.subscriptionPayments[0];
+      let status: SubscriptionPaymentStatus | 'NO_PAYMENT' = 'NO_PAYMENT';
+
+      if (latestPayment) {
+        status = latestPayment.status;
+      }
+
+      return {
+        ...master,
+        paymentStatus: status,
+      };
+    });
+
     return {
       statusCode: 200,
       message: 'لیست استاد های باشگاه با موفقیت دریافت شد',
-      data: getCoach,
+      data: mastersWithStatus,
     };
   }
 
@@ -111,6 +186,13 @@ export class MasterService {
       });
     }
 
+    if (master.type !== Role.Master) {
+      throw new BadRequestException({
+        statusCode: 200,
+        message: 'امکان اختصاص پلن به این کاربر وجود ندارد',
+      });
+    }
+
     if (plan.type === MasterPlanType.TRIAL) {
       if (master.hasUsedTrial) {
         throw new BadRequestException({
@@ -159,6 +241,83 @@ export class MasterService {
       statusCode: 200,
       message: `کاربر گرامی پلن ${plan.name} با موفقیت فعال شد`,
       data: updatedMaster,
+    };
+  }
+
+  // select plan just your self master
+  async getMasterPlanStatus(masterId: number) {
+    const master = await this.prismaService.users.findUnique({
+      where: { user_id: masterId },
+      include: { masterPlan: true },
+    });
+
+    if (!master || !master.masterPlan) {
+      return {
+        isActive: false,
+        message: 'شما در حال حاضر هیچ پلن فعالی ندارید',
+      };
+    }
+
+    const plan = master.masterPlan;
+    const now = new Date();
+    let startsAt: Date | null = null;
+    let endsAt: Date | null = null;
+
+    if (plan.type === MasterPlanType.TRIAL) {
+      endsAt = master.trialEndsAt;
+      if (endsAt) {
+        startsAt = new Date(endsAt);
+        startsAt.setDate(startsAt.getDate() - (plan.durationInDays || 0));
+      }
+    } else {
+      const lastPayment =
+        await this.prismaService.subscriptionPayment.findFirst({
+          where: {
+            masterId: masterId,
+            status: SubscriptionPaymentStatus.CONFIRMED,
+          },
+          orderBy: { updatedAt: 'desc' },
+        });
+
+      if (lastPayment) {
+        startsAt = lastPayment.updatedAt;
+        endsAt = new Date(startsAt);
+        endsAt.setDate(endsAt.getDate() + (plan.durationInDays || 0));
+      } else {
+        return { isActive: false, message: 'پلن شما در انتظار پرداخت است' };
+      }
+    }
+
+    if (!startsAt || !endsAt || now > endsAt) {
+      return { isActive: false, message: 'پلن شما منقضی شده است' };
+    }
+
+    const totalDurationMs = endsAt.getTime() - startsAt.getTime();
+    const elapsedMs = now.getTime() - startsAt.getTime();
+    const daysTotal = Math.round(totalDurationMs / (1000 * 60 * 60 * 24));
+    const daysLeft = Math.ceil(
+      (endsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const progressPercentage = Math.min(
+      100,
+      (elapsedMs / totalDurationMs) * 100,
+    );
+
+    const data = {
+      planName: plan.name,
+      planType: plan.type,
+      isActive: true,
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
+      daysTotal: daysTotal,
+      daysLeft: daysLeft,
+      progressPercentage: parseFloat(progressPercentage.toFixed(1)),
+    };
+
+    return {
+      statusCode: 200,
+      message: 'وضعیت پلن با موفقیت دریافت شد',
+      data: data,
     };
   }
 

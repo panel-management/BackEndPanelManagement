@@ -78,6 +78,7 @@ export class MasterController {
     return this.masterService.assignPlanToMaster(masterId, assignDto.planId);
   }
 
+  // select plan just your self master
   @Put('my-plan')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
@@ -88,6 +89,15 @@ export class MasterController {
     );
   }
 
+  // select plan just your self master
+  @Get('my-plan/status')
+  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
+  getMyPlanStatus(@Req() req) {
+    return this.masterService.getMasterPlanStatus(req.user.userId);
+  }
+
+  // delete master just admin
   @Delete('/:id')
   @Roles(Role.Admin)
   @HttpCode(HttpStatus.OK)

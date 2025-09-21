@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Post,
   Put,
   Req,
   UseGuards,
@@ -20,9 +22,15 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 export class ClubProfileController {
   constructor(private readonly clubProfile: ClubProfileService) {}
 
-  @Put('complete-profile-club')
+  @Get('view-club-profile')
   @Roles(Role.Master)
+  getMyClubProfile(@Req() req) {
+    return this.clubProfile.getInstructorProfile(req.user.userId);
+  }
+
+  @Post('complete-profile-club')
   @HttpCode(HttpStatus.CREATED)
+  @Roles(Role.Master)
   completeInstructorProfile(
     @Req() req,
     @Body() completeProfileDto: CompleteProfileDto,

@@ -304,7 +304,7 @@ model InstructorProfile {
   clubAddress     String?
   aboutClub       String?   @db.Text
   clubPhoneNumber String?
-  foundationDate  DateTime?
+  foundationDate  String?
   goal            String?   @db.Text
   socialNetworks  Json?
 

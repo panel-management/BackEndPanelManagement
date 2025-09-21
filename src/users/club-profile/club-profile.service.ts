@@ -12,6 +12,26 @@ export class ClubProfileService {
     private readonly smsService: SmsServiceService,
   ) {}
 
+  async getInstructorProfile(masterId: number) {
+    const profile = await this.prisma.instructorProfile.findUnique({
+      where: { userId: masterId },
+    });
+
+    if (!profile) {
+      return {
+        statusCode: 200,
+        message: 'پروفایل باشگاه هنوز ایجاد نشده است',
+        data: null,
+      };
+    }
+
+    return {
+      statusCode: 200,
+      message: 'اطلاعات پروفایل باشگاه با موفقیت دریافت شد',
+      data: profile,
+    };
+  }
+
   async completeInstructorProfile(masterId: number, dto: CompleteProfileDto) {
     const user = await this.prisma.users.findUnique({
       where: { user_id: masterId },
@@ -25,27 +45,9 @@ export class ClubProfileService {
       });
     }
 
-    const clubProfile = await this.prisma.instructorProfile.upsert({
-      where: {
-        userId: masterId,
-      },
-      update: {
-        clubName: dto.clubName,
-        activityType: dto.activityType,
-        clubAddress: dto.clubAddress,
-        aboutClub: dto.aboutClub,
-        clubPhoneNumber: dto.clubPhoneNumber,
-        foundationDate: dto.foundationDate,
-        goal: dto.goal,
-        socialNetworks: dto.socialNetworks
-          ? (dto.socialNetworks as Prisma.JsonObject)
-          : Prisma.JsonNull,
-        isProfileComplete: true,
-      },
-      create: {
-        user: {
-          connect: { user_id: masterId },
-        },
+    const clubProfile = await this.prisma.instructorProfile.create({
+      data: {
+        user: { connect: { user_id: masterId } },
         clubName: dto.clubName,
         activityType: dto.activityType,
         clubAddress: dto.clubAddress,
@@ -63,10 +65,8 @@ export class ClubProfileService {
     if (user.phoneNumber) {
       const message = `مدیر محترم ${user.fullName}
 اطلاعات شما با موفقیت تکمیل شد حالا می توانید پلن خود را انتخاب و از پنل برای اداره باشگاه خود استفاده کنید با تشکر ما را انتخاب کردید.`;
-
       try {
         await this.smsService.sendMessageToUser(user.phoneNumber, message);
-        console.log(`پیامک آزمایشی به ${user.phoneNumber}: ${message}`);
       } catch (error) {
         console.error(
           `ارسال پیامک تکمیل پروفایل به ${user.phoneNumber} ناموفق بود:`,

@@ -11,14 +11,24 @@ import { UsersService } from 'src/users/users.service';
 import { CompleteRegistrationDto } from './dto/complete-registration.dto';
 import { SmsServiceService } from 'src/sms-service/sms-service.service';
 import { Role } from './enums/role.enum';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly userService: UsersService,
     private readonly smsService: SmsServiceService,
     private readonly jwtService: JwtService,
   ) {}
+
+  async validateUserById(userId: number) {
+    const user = await this.prisma.users.findUnique({
+      where: { user_id: userId },
+    });
+
+    return user;
+  }
 
   async requestOtp(phoneNumber: string) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -98,7 +108,7 @@ export class AuthService {
     if (user.fullName) {
       throw new ConflictException({
         statusCode: 409,
-        message: 'این شماره تلفن قبلاً ثبت‌ نام شده است'
+        message: 'این شماره تلفن قبلاً ثبت‌ نام شده است',
       });
     }
 

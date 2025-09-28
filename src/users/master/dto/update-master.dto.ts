@@ -1,4 +1,4 @@
-import { IsOptional, IsString, Matches } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Matches } from 'class-validator';
 
 export class UpdateMasterDto {
   @IsString()
@@ -14,14 +14,13 @@ export class UpdateMasterDto {
   @Matches(/^09\d{9}$/, { message: 'فرمت شماره تلفن نامعتبر است' })
   phoneNumber?: string;
 
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  @Matches(/^09\d{9}$/, { message: 'فرمت شماره تلفن اضطراری نامعتبر است' })
-  phoneNumberEmergency?: string;
+  age?: number;
 
   @IsString()
   @IsOptional()
-  address?: string;
+  birthDate?: string;
 
   @IsString()
   @IsOptional()

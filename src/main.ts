@@ -14,7 +14,17 @@ async function bootstrap() {
 
   app.use(compression());
 
-  app.enableCors();
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    methods: 'GET,POST,PUT,DELETE',
+    credentials: true,
+  });
+
+  app.use('/uploads', (req, res, next) => {
+    res.removeHeader('Cross-Origin-Resource-Policy');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  });
 
   app.setGlobalPrefix('api');
 

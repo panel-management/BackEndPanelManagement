@@ -35,23 +35,50 @@ export class MasterController {
     return this.masterService.getAllMaster();
   }
 
-  @Get('/:id')
-  @Roles(Role.Admin, Role.Master)
+  // See You Profile Just yourself master
+  @Get('/details')
+  @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  getMasterById(@Param('id', ParseIntPipe) masterId: number) {
-    return this.masterService.getMasterById(masterId);
+  getMasterById(@Req() req) {
+    return this.masterService.getMasterById(req.user.userId);
   }
 
-  @Put('/:id')
-  @Roles(Role.Admin, Role.Master)
+  // See All Profile Master Just Admin
+  @Get('/:id')
+  @Roles(Role.Admin)
+  @HttpCode(HttpStatus.OK)
+  getMasterByIdSeeAdmin(@Param('id', ParseIntPipe) masterId: number) {
+    return this.masterService.getMasterByIdSeeAdmin(masterId);
+  }
+
+  // See All Update Profile Master Just Admin
+  @Put('/update/:id')
+  @Roles(Role.Admin)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('imageFile'))
-  updateMaster(
+  updateMasterByAdmin(
     @Param('id', ParseIntPipe) masterId: number,
     @Body() updateMasterDto: UpdateMasterDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.masterService.updateMaster(masterId, updateMasterDto, file);
+  }
+
+  // See You Update Profile Just yourself master
+  @Put('/update/details')
+  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('imageFile'))
+  updateMaster(
+    @Req() req,
+    @Body() updateMasterDto: UpdateMasterDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.masterService.updateMaster(
+      req.user.userId,
+      updateMasterDto,
+      file,
+    );
   }
 
   @Put('/changeStatus/:id')

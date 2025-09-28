@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -21,8 +22,8 @@ type UpdatedMasterData = {
   fullName: string | null;
   nationalCode: string | null;
   phoneNumber: string | null;
-  phoneNumberEmergency: string | null;
-  address: string | null;
+  age: number | null;
+  birthDate: string | null;
   history: string | null;
   certificates: string | null;
 };
@@ -137,23 +138,58 @@ export class MasterService {
     };
   }
 
+  // see profile just master
   async getMasterById(masterId: number) {
     const getMaster = await this.prismaService.users.findUnique({
-      where: { user_id: masterId },
+      where: { user_id: masterId, type: Role.Master },
       include: {
         sport: true,
         students: true,
       },
     });
 
-    if (
-      !getMaster ||
-      getMaster.user_id !== masterId ||
-      getMaster.type !== Role.Master
-    ) {
+    if (getMaster?.type !== Role.Master) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        message: 'کاربر مورد نظر از نوع استاد نیست',
+      });
+    }
+
+    if (!getMaster) {
       throw new NotFoundException({
         statusCode: 404,
         message: 'استادی با این مشخصات یافت نشد',
+      });
+    }
+
+    return {
+      statusCode: 200,
+      message: 'استاد با موفقیت یافت شد',
+      data: getMaster,
+    };
+  }
+
+  // see profile all master just admin
+  async getMasterByIdSeeAdmin(masterId: number) {
+    const getMaster = await this.prismaService.users.findUnique({
+      where: { user_id: masterId, type: Role.Master },
+      include: {
+        sport: true,
+        students: true,
+      },
+    });
+
+    if (!getMaster) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'استادی با این مشخصات یافت نشد',
+      });
+    }
+
+    if (getMaster.type !== Role.Master) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        message: 'کاربر مورد نظر یک استاد نیست',
       });
     }
 
@@ -332,6 +368,7 @@ export class MasterService {
     };
   }
 
+  // update Master Just Admin And Master
   async updateMaster(
     masterId: number,
     dto: UpdateMasterDto,
@@ -354,8 +391,8 @@ export class MasterService {
         fullName: dto.fullName,
         nationalCode: dto.nationalCode,
         phoneNumber: dto.phoneNumber,
-        phoneNumberEmergency: dto.phoneNumber,
-        address: dto.address,
+        age: dto.age,
+        birthDate: dto.birthDate,
         history: dto.history,
         certificates: dto.certificates,
         image: imageUrl,
@@ -365,8 +402,8 @@ export class MasterService {
         fullName: true,
         nationalCode: true,
         phoneNumber: true,
-        phoneNumberEmergency: true,
-        address: true,
+        age: true,
+        birthDate: true,
         history: true,
         certificates: true,
         image: true,
@@ -380,6 +417,7 @@ export class MasterService {
     };
   }
 
+  // change Status Just Admin
   async updateStatusMaster(
     masterId: number,
     active: Active,
@@ -405,7 +443,8 @@ export class MasterService {
       data: changeStatus,
     };
   }
-
+  
+  // Delete Account Just Admin
   async deleteMaster(
     masterId: number,
   ): Promise<{ statusCode: number; message: string }> {
@@ -426,6 +465,16 @@ export class MasterService {
         );
       }
     }
+
+    await this.prismaService.$transaction(async (prisma) => {
+      try {
+        await prisma.instructorProfile.deleteMany({
+          where: { userId: masterId },
+        });
+      } catch (error: any) {
+        console.log(error);
+      }
+    });
 
     await this.prismaService.users.delete({
       where: { user_id: masterId, type: Role.Master },

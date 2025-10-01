@@ -395,6 +395,7 @@ export class MasterService {
         birthDate: dto.birthDate,
         history: dto.history,
         certificates: dto.certificates,
+        ...(dto.sportId && { sportId: dto.sportId }),
         image: imageUrl,
       },
       select: {
@@ -406,6 +407,8 @@ export class MasterService {
         birthDate: true,
         history: true,
         certificates: true,
+        sport: true,
+        sportId: true,
         image: true,
       },
     });
@@ -443,7 +446,7 @@ export class MasterService {
       data: changeStatus,
     };
   }
-  
+
   // Delete Account Just Admin
   async deleteMaster(
     masterId: number,

@@ -1,4 +1,11 @@
-import { IsNumber, IsOptional, IsString, Matches } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Matches,
+} from 'class-validator';
 
 export class UpdateMasterDto {
   @IsString()
@@ -29,4 +36,9 @@ export class UpdateMasterDto {
   @IsString()
   @IsOptional()
   certificates?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'شناسه ورزش باید یک عدد صحیح باشد' })
+  sportId?: number;
 }

@@ -531,7 +531,37 @@ export class FinancialsService {
 
   // create plan for master
   async createMasterPlan(createDto: CreateMasterPlanDto) {
-    const createPlan = await this.prisma.masterPlan.create({ data: createDto });
+    if (
+      createDto.type === 'PAID' &&
+      (createDto.price === undefined || createDto.price === null)
+    ) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: 'برای پلن‌های پولی، وارد کردن قیمت الزامی است',
+      });
+    }
+
+    const data: any = {
+      name: createDto.name,
+      description: createDto.description,
+      features: createDto.features,
+      type: createDto.type,
+      durationInDays: createDto.durationInDays,
+    };
+
+    if (createDto.price !== undefined) {
+      if (createDto.price >= 10000000000) {
+        throw new BadRequestException({
+          statusCode: 400,
+          message: 'قیمت وارد شده بیش از حد مجاز است (حداکثر ۹۹۹۹۹۹۹۹۹۹.۹۹)',
+        });
+      }
+      data.price = createDto.price;
+    } else {
+      data.price = 0;
+    }
+
+    const createPlan = await this.prisma.masterPlan.create({ data });
 
     return {
       statusCode: 201,

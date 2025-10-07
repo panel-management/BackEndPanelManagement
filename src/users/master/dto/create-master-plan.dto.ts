@@ -19,9 +19,10 @@ export class CreateMasterPlanDto {
   @IsOptional()
   description?: string;
 
-  @Type(() => Number)
+  @IsOptional()
   @IsNumber()
-  price: number;
+  @Type(() => Number)
+  price?: number;
 
   @IsArray()
   @IsString({ each: true })

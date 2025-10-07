@@ -202,7 +202,7 @@ model MasterPlan {
   description String?
 
   type           MasterPlanType @default(PAID)
-  price          Decimal        @db.Decimal(12, 2)
+  price          Decimal?        @db.Decimal(12, 2)
   durationInDays Int
 
   features String[]

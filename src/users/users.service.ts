@@ -26,6 +26,7 @@ export class UsersService {
     });
   }
 
+  // BUG: bug not validation nationalCode error 500
   async updateProfile(
     userId: number,
     profileData: {

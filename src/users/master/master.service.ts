@@ -145,6 +145,7 @@ export class MasterService {
       include: {
         sport: true,
         students: true,
+        masterPlan: true,
       },
     });
 
@@ -176,6 +177,7 @@ export class MasterService {
       include: {
         sport: true,
         students: true,
+        masterPlan: true,
       },
     });
 

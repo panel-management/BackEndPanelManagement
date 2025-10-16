@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { users } from '@prisma/client';
 
@@ -26,7 +26,6 @@ export class UsersService {
     });
   }
 
-  // BUG: bug not validation nationalCode error 500
   async updateProfile(
     userId: number,
     profileData: {
@@ -36,6 +35,20 @@ export class UsersService {
       type: number;
     },
   ): Promise<users> {
+    const existingUser = await this.prismaService.users.findFirst({
+      where: {
+        nationalCode: profileData.nationalCode,
+        NOT: { user_id: userId },
+      },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: 'کدملی تکراری است لطفا کدملی صحیح وارد کنید',
+      });
+    }
+
     return this.prismaService.users.update({
       where: { user_id: userId },
       data: {

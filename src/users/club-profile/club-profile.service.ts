@@ -16,8 +16,8 @@ export class ClubProfileService {
     private readonly smsService: SmsServiceService,
   ) {}
 
-  async getInstructorProfile(masterId: number) {
-    const profile = await this.prisma.instructorProfile.findUnique({
+  async getClubProfile(masterId: number) {
+    const profile = await this.prisma.clubProfile.findUnique({
       where: { userId: masterId },
     });
 
@@ -36,13 +36,13 @@ export class ClubProfileService {
     };
   }
 
-  async completeInstructorProfile(masterId: number, dto: CompleteProfileDto) {
+  async completeClubProfile(masterId: number, dto: CompleteProfileDto) {
     const user = await this.prisma.users.findUnique({
       where: { user_id: masterId },
       select: { phoneNumber: true, fullName: true, user_id: true },
     });
 
-    let clubProfile = await this.prisma.instructorProfile.findUnique({
+    let clubProfile = await this.prisma.clubProfile.findUnique({
       where: { userId: user?.user_id },
     });
 
@@ -61,7 +61,7 @@ export class ClubProfileService {
     }
 
     if (!clubProfile) {
-      clubProfile = await this.prisma.instructorProfile.create({
+      clubProfile = await this.prisma.clubProfile.create({
         data: {
           user: { connect: { user_id: masterId } },
           clubName: dto.clubName,
@@ -78,7 +78,7 @@ export class ClubProfileService {
         },
       });
     } else {
-      clubProfile = await this.prisma.instructorProfile.update({
+      clubProfile = await this.prisma.clubProfile.update({
         where: {
           userId: masterId,
         },
@@ -111,8 +111,8 @@ export class ClubProfileService {
     };
   }
 
-  async updateInstructorProfile(masterId: number, dto: UpdateProfileDto) {
-    const instructorProfile = await this.prisma.instructorProfile.findUnique({
+  async updateClubProfile(masterId: number, dto: UpdateProfileDto) {
+    const instructorProfile = await this.prisma.clubProfile.findUnique({
       where: { userId: masterId },
     });
 
@@ -123,7 +123,7 @@ export class ClubProfileService {
       });
     }
 
-    const clubProfile = await this.prisma.instructorProfile.update({
+    const clubProfile = await this.prisma.clubProfile.update({
       where: {
         userId: masterId,
       },

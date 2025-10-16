@@ -24,18 +24,18 @@ export class ClubProfileController {
 
   @Get('view-club-profile')
   @Roles(Role.Master)
-  getMyClubProfile(@Req() req) {
-    return this.clubProfile.getInstructorProfile(req.user.userId);
+  getClubProfile(@Req() req) {
+    return this.clubProfile.getClubProfile(req.user.userId);
   }
 
   @Post('complete-profile-club')
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.Master)
-  completeInstructorProfile(
+  completeClubProfile(
     @Req() req,
     @Body() completeProfileDto: CompleteProfileDto,
   ) {
-    return this.clubProfile.completeInstructorProfile(
+    return this.clubProfile.completeClubProfile(
       req.user.userId,
       completeProfileDto,
     );
@@ -44,11 +44,8 @@ export class ClubProfileController {
   @Put('update-profile-club')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  updateInstructorProfile(
-    @Req() req,
-    @Body() updateProfileDto: UpdateProfileDto,
-  ) {
-    return this.clubProfile.updateInstructorProfile(
+  updateClubProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDto) {
+    return this.clubProfile.updateClubProfile(
       req.user.userId,
       updateProfileDto,
     );

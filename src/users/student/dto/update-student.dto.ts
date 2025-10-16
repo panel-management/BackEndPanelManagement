@@ -3,6 +3,7 @@ import {
   IsArray,
   IsBoolean,
   IsInt,
+  IsISO8601,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -16,9 +17,10 @@ export class UpdateStudentDto {
   @IsOptional()
   nationalCode?: string;
 
-  @IsString()
   @IsOptional()
-  birthDate?: string;
+  @IsISO8601()
+  @Type(() => Date)
+  birthDate?: Date;
 
   @IsInt()
   @Type(() => Number)

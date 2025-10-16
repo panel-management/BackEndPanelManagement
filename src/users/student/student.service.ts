@@ -15,7 +15,7 @@ import { FinancialsService } from 'src/financials/financials.service';
 type UpdatedStudentData = {
   fullName: string | null;
   nationalCode: string | null;
-  birthDate: string | null;
+  birthDate: Date | null;
   age: number | null;
   phoneNumber: string | null;
   phoneNumberEmergency: string | null;

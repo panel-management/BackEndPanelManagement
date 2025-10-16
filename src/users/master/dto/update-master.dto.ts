@@ -1,6 +1,8 @@
 import { Type } from 'class-transformer';
 import {
+  IsDateString,
   IsInt,
+  IsISO8601,
   IsNumber,
   IsOptional,
   IsString,
@@ -25,9 +27,10 @@ export class UpdateMasterDto {
   @IsOptional()
   age?: number;
 
-  @IsString()
   @IsOptional()
-  birthDate?: string;
+  @IsISO8601()
+  @Type(() => Date)
+  birthDate?: Date;
 
   @IsString()
   @IsOptional()

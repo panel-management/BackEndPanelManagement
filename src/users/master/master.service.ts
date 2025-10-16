@@ -23,7 +23,7 @@ type UpdatedMasterData = {
   nationalCode: string | null;
   phoneNumber: string | null;
   age: number | null;
-  birthDate: string | null;
+  birthDate: Date | null;
   history: string | null;
   certificates: string | null;
 };
@@ -210,6 +210,7 @@ export class MasterService {
     ]);
     let updatedMaster;
     let message = '';
+    const now = new Date();
 
     if (!master) {
       throw new NotFoundException({
@@ -226,15 +227,22 @@ export class MasterService {
 
     if (master.type !== Role.Master) {
       throw new BadRequestException({
-        statusCode: 200,
+        statusCode: 400,
         message: 'امکان اختصاص پلن به این کاربر وجود ندارد',
+      });
+    }
+
+    if (master.planEndsAt && master.planEndsAt > now) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: `شما در حال حاضر یک پلن فعال دارید تا تاریخ ${master.planEndsAt.toLocaleDateString('fa-IR')} لطفا پس از اتمام آن پلن جدید انتخاب کنید`,
       });
     }
 
     if (plan.type === MasterPlanType.TRIAL) {
       if (master.hasUsedTrial) {
         throw new BadRequestException({
-          statusCode: 404,
+          statusCode: 400,
           message: 'کاربر گرامی شما قبلا پلن رایگان را استفاده کرده اید',
         });
       }
@@ -245,24 +253,22 @@ export class MasterService {
         where: { user_id: masterId },
         data: {
           masterPlanId: planId,
-          trialEndsAt: trialEndsAt,
+          planEndsAt: trialEndsAt,
           hasUsedTrial: true,
         },
       });
 
-      const formattedDate =
-        updatedMaster.trialEndsAt?.toLocaleDateString('fa-IR');
       message = `سلام مدیر محترم ${master.fullName}
 پلن آزمایشی "${plan.name}" برای شما فعال شد.
-تاریخ انقضا: ${formattedDate}`;
+تاریخ انقضا: ${updatedMaster.planEndsAt?.toLocaleDateString('fa-IR')}`;
     } else {
       updatedMaster = await this.prismaService.users.update({
         where: { user_id: masterId },
-        data: { masterPlanId: planId, trialEndsAt: null },
+        data: { masterPlanId: planId, planEndsAt: null },
       });
 
       message = `سلام مدیر محترم ${master.fullName}
-پلن ${plan.name} برای شما انتخاب شد لطفاً جهت نهایی‌سازی، هزینه آن را پرداخت نمایید.`;
+${plan.name} برای شما انتخاب شد لطفاً جهت نهایی‌سازی، هزینه آن را پرداخت نمایید.`;
     }
 
     if (master.phoneNumber && message) {
@@ -277,7 +283,7 @@ export class MasterService {
     }
     return {
       statusCode: 200,
-      message: `کاربر گرامی پلن ${plan.name} با موفقیت فعال شد`,
+      message: `کاربر گرامی ${plan.name} با موفقیت فعال شد`,
       data: updatedMaster,
     };
   }
@@ -291,8 +297,9 @@ export class MasterService {
 
     if (!master || !master.masterPlan) {
       return {
-        isActive: false,
+        statusCode: 200,
         message: 'شما در حال حاضر هیچ پلن فعالی ندارید',
+        isActive: false,
       };
     }
 
@@ -302,7 +309,7 @@ export class MasterService {
     let endsAt: Date | null = null;
 
     if (plan.type === MasterPlanType.TRIAL) {
-      endsAt = master.trialEndsAt;
+      endsAt = master.planEndsAt;
       if (endsAt) {
         startsAt = new Date(endsAt);
         startsAt.setDate(startsAt.getDate() - (plan.durationInDays || 0));
@@ -322,12 +329,21 @@ export class MasterService {
         endsAt = new Date(startsAt);
         endsAt.setDate(endsAt.getDate() + (plan.durationInDays || 0));
       } else {
-        return { isActive: false, message: 'پلن شما در انتظار پرداخت است' };
+        return {
+          statusCode: 202,
+          message:
+            'دسترسی شما به امکانات محدود شده است. برای ادامه استفاده از پلن، لطفاً پرداخت را انجام دهید',
+          isActive: false,
+        };
       }
     }
 
     if (!startsAt || !endsAt || now > endsAt) {
-      return { isActive: false, message: 'پلن شما منقضی شده است' };
+      return {
+        statusCode: 403,
+        message: 'پلن شما منقضی شده است',
+        isActive: false,
+      };
     }
 
     const totalDurationMs = endsAt.getTime() - startsAt.getTime();
@@ -365,7 +381,7 @@ export class MasterService {
 
     return {
       statusCode: 200,
-      message: 'پلن با موفقیت انتخاب شد',
+      message: 'پلن انتخاب شده با موفقیت ثبت شد',
       data: planMaster,
     };
   }
@@ -473,7 +489,7 @@ export class MasterService {
 
     await this.prismaService.$transaction(async (prisma) => {
       try {
-        await prisma.instructorProfile.deleteMany({
+        await prisma.clubProfile.deleteMany({
           where: { userId: masterId },
         });
       } catch (error: any) {

@@ -72,8 +72,15 @@ async function main() {
 
   console.log('--- success process added belt ---');
 
-  const adminPhoneNumber = '09025672263';
-  const adminNationalCode = '0927189135';
+  const adminPhoneNumber = process.env.ADMIN_PHONE_NUMBER!;
+  const adminNationalCode = process.env.ADMIN_NATIONAL_CODE!;
+  const now = new Date();
+
+  if (!adminPhoneNumber || !adminNationalCode) {
+    throw new Error(
+      '❌ ENV variables are missing. Please set ADMIN_PHONE_NUMBER and ADMIN_NATIONAL_CODE in your .env file.',
+    );
+  }
 
   await prisma.users.upsert({
     where: { phoneNumber: adminPhoneNumber },
@@ -84,8 +91,8 @@ async function main() {
       nationalCode: adminNationalCode,
       type: Role.Admin,
       active: Active.ENABLE,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     },
   });
 

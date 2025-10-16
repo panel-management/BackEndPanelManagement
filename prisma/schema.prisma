@@ -101,7 +101,7 @@ model users {
   address                String?      @db.Text
   nationalCode           String?      @unique
   age                    Int?
-  birthDate              String?
+  birthDate              DateTime?
   image                  String?
   // Emergency & Health
   phoneNumberEmergency   String?
@@ -133,19 +133,19 @@ model users {
   confirmedStudentTxs  Transaction[]         @relation("ConfirmedByAdmin")
   confirmedMasterSubs  SubscriptionPayment[] @relation("ConfirmedByAdmin")
 
-  masterPlanId      Int?
-  masterPlan        MasterPlan?        @relation(fields: [masterPlanId], references: [id], onDelete: SetNull)
-  trialEndsAt       DateTime?
-  hasUsedTrial      Boolean            @default(false)
+  masterPlanId Int?
+  masterPlan   MasterPlan?     @relation(fields: [masterPlanId], references: [id], onDelete: SetNull)
+  planEndsAt   DateTime?
+  hasUsedTrial Boolean         @default(false)
   // Relations for Support Tickets
-  tickets           Ticket[]           @relation("UserTickets")
-  sentMessages      TicketMessage[]    @relation("UserSentMessages")
+  tickets      Ticket[]        @relation("UserTickets")
+  sentMessages TicketMessage[] @relation("UserSentMessages")
   // Club Profile Info
-  instructorProfile InstructorProfile?
+  clubProfile  ClubProfile?
   // System Fields
-  active            Active             @default(ENABLE)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  active       Active          @default(ENABLE)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
   @@map("users")
 }
@@ -202,7 +202,7 @@ model MasterPlan {
   description String?
 
   type           MasterPlanType @default(PAID)
-  price          Decimal?        @db.Decimal(12, 2)
+  price          Decimal?       @db.Decimal(12, 2)
   durationInDays Int
 
   features String[]
@@ -294,7 +294,7 @@ model TicketMessage {
 }
 
 // ClubProfile
-model InstructorProfile {
+model ClubProfile {
   id     Int   @id @unique @default(autoincrement())
   userId Int   @unique
   user   users @relation(fields: [userId], references: [user_id])
@@ -302,10 +302,10 @@ model InstructorProfile {
   clubName        String?
   activityType    String?
   clubAddress     String?
-  aboutClub       String?   @db.Text
+  aboutClub       String? @db.Text
   clubPhoneNumber String?
   foundationDate  String?
-  goal            String?   @db.Text
+  goal            String? @db.Text
   socialNetworks  Json?
 
   isProfileComplete Boolean @default(false)

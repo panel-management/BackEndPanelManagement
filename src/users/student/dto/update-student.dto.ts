@@ -2,8 +2,8 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsDate,
   IsInt,
-  IsISO8601,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -18,7 +18,7 @@ export class UpdateStudentDto {
   nationalCode?: string;
 
   @IsOptional()
-  @IsISO8601()
+  @IsDate()
   @Type(() => Date)
   birthDate?: Date;
 

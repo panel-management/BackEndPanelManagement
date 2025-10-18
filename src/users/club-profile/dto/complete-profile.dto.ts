@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import {
-  IsISO8601,
+  IsDate,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -48,7 +48,7 @@ export class CompleteProfileDto {
   clubPhoneNumber?: string;
 
   @IsOptional()
-  @IsISO8601()
+  @IsDate()
   @Type(() => Date)
   foundationDate?: Date;
 

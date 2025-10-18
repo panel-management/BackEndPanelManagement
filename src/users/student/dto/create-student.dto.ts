@@ -7,7 +7,7 @@ import {
   IsInt,
   IsBoolean,
   IsArray,
-  IsISO8601,
+  IsDate,
 } from 'class-validator';
 
 export class CreateStudentDto {
@@ -24,7 +24,7 @@ export class CreateStudentDto {
   age: number;
 
   @IsNotEmpty({ message: 'تاریخ تولد نمی تواند خلی باشد' })
-  @IsISO8601()
+  @IsDate()
   @Type(() => Date)
   birthDate: Date;
 

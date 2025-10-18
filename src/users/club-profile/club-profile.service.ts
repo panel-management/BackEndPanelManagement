@@ -112,11 +112,11 @@ export class ClubProfileService {
   }
 
   async updateClubProfile(masterId: number, dto: UpdateProfileDto) {
-    const instructorProfile = await this.prisma.clubProfile.findUnique({
+    const profile = await this.prisma.clubProfile.findUnique({
       where: { userId: masterId },
     });
 
-    if (!instructorProfile) {
+    if (!profile) {
       throw new NotFoundException({
         statusCode: 404,
         message: 'پروفایل استاد با این مشخصات پیدا نشد',

@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsISO8601,
   IsObject,
   IsOptional,
   IsString,
@@ -45,9 +46,10 @@ export class UpdateProfileDto {
   @IsOptional()
   clubPhoneNumber?: string;
 
-  @IsString()
   @IsOptional()
-  foundationDate?: string;
+  @IsISO8601()
+  @Type(() => Date)
+  foundationDate?: Date;
 
   @IsString()
   @IsOptional()

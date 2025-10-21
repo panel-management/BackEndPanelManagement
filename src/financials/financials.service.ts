@@ -108,7 +108,7 @@ export class FinancialsService {
         day: 'numeric',
       });
 
-      const message = `سلام ${student.fullName || 'هنرجوی عزیز'}
+      const message = `هنرجوی عزیز سلام ${student.fullName}
 یک هزینه جدید برای ${createTransaction.description} به مبلغ ${formattedAmount} تومان برای شما ثبت شد.
 مهلت پرداخت: ${formattedDueDate}`;
 
@@ -169,7 +169,10 @@ export class FinancialsService {
 پرداخت شما برای ${transaction.description} به مبلغ ${transaction.amount.toNumber().toLocaleString('fa-IR')} تومان با موفقیت تایید شد.`;
 
       try {
-        await this.smsService.sendMessageToUser('09025672263', message);
+        await this.smsService.sendMessageToUser(
+          transaction.student.phoneNumber,
+          message,
+        );
       } catch (error: any) {
         console.error(
           `خطا ارسال پیامک به شماره ${transaction.student.phoneNumber} ارسال نشد`,
@@ -381,7 +384,10 @@ export class FinancialsService {
       where: { user_id: masterId },
     });
     if (!master) {
-      throw new NotFoundException('کاربر ثبت کننده یافت نشد.');
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'کاربر ثبت کننده یافت نشد',
+      });
     }
 
     const imageUrl = `${process.env.APP_URL}uploads/receipt/${file.filename}`;
@@ -403,11 +409,11 @@ export class FinancialsService {
         .toNumber()
         .toLocaleString('fa-IR');
 
-      const message = `سلام ${master.fullName || 'مدیر محترم'}
+      const message = `مدیر محترم سلام ${master.fullName}
 درخواست پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان با موفقیت ثبت شد.`;
 
       try {
-        await this.smsService.sendMessageToUser('09025672263', message);
+        await this.smsService.sendMessageToUser(master.phoneNumber, message);
       } catch (error) {
         console.error(
           `ارسال پیامک ثبت اشتراک به ${master.phoneNumber} ناموفق بود:`,
@@ -462,17 +468,20 @@ export class FinancialsService {
       const formattedAmount = payment.amount.toNumber().toLocaleString('fa-IR');
 
       if (reviewDto.status === SubscriptionPaymentStatus.CONFIRMED) {
-        message = `سلام ${payment.master.fullName || 'مدیر محترم'}
+        message = `مدیر محترم سلام ${payment.master.fullName}
 پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان با موفقیت تایید شد.`;
       } else if (reviewDto.status === SubscriptionPaymentStatus.REJECTED) {
-        message = `سلام ${payment.master.fullName || 'مدیر محترم'}
+        message = `مدیر محترم سلام ${payment.master.fullName}
 متاسفانه پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان رد شد.
 دلیل: ${reviewDto.adminNotes || 'دلیل ذکر نشده'}`;
       }
 
       if (message) {
         try {
-          await this.smsService.sendMessageToUser('09025672263', message);
+          await this.smsService.sendMessageToUser(
+            payment.master.phoneNumber,
+            message,
+          );
         } catch (error) {
           console.error(
             `ارسال پیامک بازبینی به ${payment.master.phoneNumber} ناموفق بود:`,

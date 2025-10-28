@@ -328,6 +328,21 @@ export class MasterService {
       include: { masterPlan: true },
     });
 
+    if (master?.type === Role.Admin) {
+      return {
+        statusCode: 200,
+        message: 'شما دسترسی ادمین دارید',
+        isActive: true,
+        isAdmin: true,
+        data: {
+          planName: 'دسترسی نامحدود ادمین',
+          planType: 'UNLIMITED',
+          isActive: true,
+          isAdmin: true,
+        },
+      };
+    }
+
     if (!master || !master.masterPlan) {
       return {
         statusCode: 200,

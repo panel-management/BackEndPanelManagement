@@ -209,6 +209,7 @@ model MasterPlan {
   isActive Boolean  @default(true)
 
   assignedMasters users[]
+  payments SubscriptionPayment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -252,6 +253,9 @@ model SubscriptionPayment {
 
   masterId Int
   master   users @relation("MasterPayments", fields: [masterId], references: [user_id], onDelete: Cascade)
+
+  planId     Int?
+  plan       MasterPlan? @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   confirmerId Int?
   confirmer   users? @relation("ConfirmedByAdmin", fields: [confirmerId], references: [user_id], onDelete: SetNull)

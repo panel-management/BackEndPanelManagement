@@ -208,8 +208,7 @@ export class MasterService {
       this.prismaService.users.findUnique({ where: { user_id: masterId } }),
       this.financialsService.findMasterPlanById(planId),
     ]);
-    let updatedMaster;
-    let message = '';
+
     const now = new Date();
 
     if (!master) {
@@ -218,6 +217,7 @@ export class MasterService {
         message: 'استاد با این مشخصات یافت نشد',
       });
     }
+
     if (!plan) {
       throw new NotFoundException({
         statusCode: 404,
@@ -239,6 +239,22 @@ export class MasterService {
       });
     }
 
+    const pendingPayment =
+      await this.prismaService.subscriptionPayment.findFirst({
+        where: {
+          masterId: masterId,
+          status: SubscriptionPaymentStatus.PENDING,
+        },
+      });
+
+    if (pendingPayment) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message:
+          'شما یک پرداخت در انتظار تایید دارید لطفا صبر کنید تا پرداخت قبلی بررسی شود',
+      });
+    }
+
     if (plan.type === MasterPlanType.TRIAL) {
       if (master.hasUsedTrial) {
         throw new BadRequestException({
@@ -246,10 +262,11 @@ export class MasterService {
           message: 'کاربر گرامی شما قبلا پلن رایگان را استفاده کرده اید',
         });
       }
+
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + (plan.durationInDays || 0));
 
-      updatedMaster = await this.prismaService.users.update({
+      const updatedMaster = await this.prismaService.users.update({
         where: { user_id: masterId },
         data: {
           masterPlanId: planId,
@@ -258,32 +275,48 @@ export class MasterService {
         },
       });
 
-      message = `سلام مدیر محترم ${master.fullName}
+      const message = `سلام مدیر محترم ${master.fullName}
 پلن آزمایشی "${plan.name}" برای شما فعال شد.
 تاریخ انقضا: ${updatedMaster.planEndsAt?.toLocaleDateString('fa-IR')}`;
-    } else {
-      updatedMaster = await this.prismaService.users.update({
-        where: { user_id: masterId },
-        data: { masterPlanId: planId, planEndsAt: null },
-      });
 
-      message = `سلام مدیر محترم ${master.fullName}
-${plan.name} برای شما انتخاب شد لطفاً جهت نهایی‌سازی، هزینه آن را پرداخت نمایید.`;
+      if (master.phoneNumber) {
+        try {
+          await this.smsService.sendMessageToUser(master.phoneNumber, message);
+        } catch (error) {
+          console.error(`ارسال پیامک فعال‌سازی پلن رایگان ناموفق بود:`, error);
+        }
+      }
+
+      return {
+        statusCode: 200,
+        message: `پلن رایگان "${plan.name}" با موفقیت فعال شد`,
+        data: updatedMaster,
+      };
     }
 
-    if (master.phoneNumber && message) {
+    const updatedMaster = await this.prismaService.users.update({
+      where: { user_id: masterId },
+      data: {
+        masterPlanId: planId,
+        planEndsAt: null,
+      },
+    });
+
+    const message = `سلام مدیر محترم ${master.fullName}
+پلن "${plan.name}" برای شما انتخاب شد.
+لطفاً جهت فعال‌سازی، هزینه ${Number(plan.price).toLocaleString('fa-IR')} تومان را پرداخت و رسید آن را ارسال نمایید.`;
+
+    if (master.phoneNumber) {
       try {
         await this.smsService.sendMessageToUser(master.phoneNumber, message);
       } catch (error) {
-        console.error(
-          `ارسال پیامک فعال‌سازی پلن به ${master.phoneNumber} ناموفق بود:`,
-          error,
-        );
+        console.error(`ارسال پیامک انتخاب پلن پولی ناموفق بود:`, error);
       }
     }
+
     return {
       statusCode: 200,
-      message: `کاربر گرامی ${plan.name} با موفقیت فعال شد`,
+      message: `پلن "${plan.name}" انتخاب شد. لطفاً برای فعال‌سازی، هزینه را پرداخت کنید`,
       data: updatedMaster,
     };
   }

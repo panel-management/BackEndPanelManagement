@@ -382,11 +382,34 @@ export class FinancialsService {
   ) {
     const master = await this.prisma.users.findUnique({
       where: { user_id: masterId },
+      include: { masterPlan: true },
     });
+
     if (!master) {
       throw new NotFoundException({
         statusCode: 404,
         message: 'کاربر ثبت کننده یافت نشد',
+      });
+    }
+
+    if (!master.masterPlanId) {
+      throw new NotFoundException({
+        statusCode: 400,
+        message: 'ابتدا باید یک پلن انتخاب کنید',
+      });
+    }
+
+    const pendingPayment = await this.prisma.subscriptionPayment.findFirst({
+      where: {
+        masterId: masterId,
+        status: SubscriptionPaymentStatus.PENDING,
+      },
+    });
+
+    if (pendingPayment) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: 'شما یک پرداخت در انتظار تایید دارید',
       });
     }
 
@@ -401,6 +424,7 @@ export class FinancialsService {
         bankName: createDto.bankName,
         receiptImageUrl: imageUrl,
         masterId: masterId,
+        planId: master.masterPlanId,
       },
     });
 
@@ -408,9 +432,9 @@ export class FinancialsService {
       const formattedAmount = createPayment.amount
         .toNumber()
         .toLocaleString('fa-IR');
-
       const message = `مدیر محترم سلام ${master.fullName}
-درخواست پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان با موفقیت ثبت شد.`;
+درخواست پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان با موفقیت ثبت شد. پس از تایید پرداخت، پلن شما فعال خواهد شد.
+با تشکر.`;
 
       try {
         await this.smsService.sendMessageToUser(master.phoneNumber, message);
@@ -424,7 +448,7 @@ export class FinancialsService {
 
     return {
       statusCode: 201,
-      message: 'پرداخت با موفقیت ثبت شد',
+      message: 'پرداخت با موفقیت ثبت شد و در انتظار تایید است',
       data: createPayment,
     };
   }
@@ -437,7 +461,15 @@ export class FinancialsService {
     const payment = await this.prisma.subscriptionPayment.findUnique({
       where: { id: paymentId },
       include: {
-        master: { select: { phoneNumber: true, fullName: true } },
+        master: {
+          select: {
+            phoneNumber: true,
+            fullName: true,
+            masterPlanId: true,
+            planEndsAt: true,
+          },
+        },
+        plan: true,
       },
     });
 
@@ -447,7 +479,8 @@ export class FinancialsService {
         message: 'پرداخت مورد نظر یافت نشد',
       });
     }
-    if (payment.status !== 'PENDING') {
+
+    if (payment.status !== SubscriptionPaymentStatus.PENDING) {
       throw new BadRequestException({
         statusCode: 400,
         message: 'این پرداخت قبلاً بازبینی شده است',
@@ -463,37 +496,66 @@ export class FinancialsService {
       },
     });
 
-    if (payment.master && payment.master.phoneNumber) {
-      let message = '';
-      const formattedAmount = payment.amount.toNumber().toLocaleString('fa-IR');
+    let message = '';
+    const formattedAmount = payment.amount.toNumber().toLocaleString('fa-IR');
 
-      if (reviewDto.status === SubscriptionPaymentStatus.CONFIRMED) {
-        message = `مدیر محترم سلام ${payment.master.fullName}
-پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان با موفقیت تایید شد.`;
-      } else if (reviewDto.status === SubscriptionPaymentStatus.REJECTED) {
-        message = `مدیر محترم سلام ${payment.master.fullName}
-متاسفانه پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان رد شد.
-دلیل: ${reviewDto.adminNotes || 'دلیل ذکر نشده'}`;
+    if (reviewDto.status === SubscriptionPaymentStatus.CONFIRMED) {
+      if (!payment.plan) {
+        throw new BadRequestException({
+          statusCode: 400,
+          message: 'پلن مرتبط با این پرداخت یافت نشد',
+        });
       }
 
-      if (message) {
-        try {
-          await this.smsService.sendMessageToUser(
-            payment.master.phoneNumber,
-            message,
-          );
-        } catch (error) {
-          console.error(
-            `ارسال پیامک بازبینی به ${payment.master.phoneNumber} ناموفق بود:`,
-            error,
-          );
-        }
+      const planEndsAt = new Date();
+      planEndsAt.setDate(
+        planEndsAt.getDate() + (payment.plan.durationInDays || 0),
+      );
+
+      await this.prisma.users.update({
+        where: { user_id: payment.masterId },
+        data: {
+          planEndsAt: planEndsAt,
+          masterPlanId: payment.planId,
+        },
+      });
+
+      message = `مدیر محترم سلام ${payment.master.fullName}
+پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان با موفقیت تایید شد.
+پلن "${payment.plan.name}" شما فعال شد.
+تاریخ انقضا: ${planEndsAt.toLocaleDateString('fa-IR')}`;
+    } else if (reviewDto.status === SubscriptionPaymentStatus.REJECTED) {
+      await this.prisma.users.update({
+        where: { user_id: payment.masterId },
+        data: {
+          masterPlanId: null,
+          planEndsAt: null,
+        },
+      });
+
+      message = `مدیر محترم سلام ${payment.master.fullName}
+متاسفانه پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان رد شد.
+دلیل: ${reviewDto.adminNotes || 'دلیل ذکر نشده'}
+لطفاً مجدداً اقدام به پرداخت کنید.`;
+    }
+
+    if (payment.master?.phoneNumber && message) {
+      try {
+        await this.smsService.sendMessageToUser(
+          payment.master.phoneNumber,
+          message,
+        );
+      } catch (error) {
+        console.error(`ارسال پیامک بازبینی ناموفق بود:`, error);
       }
     }
 
     return {
       statusCode: 200,
-      message: 'پرداخت با موفقیت بررسی شد',
+      message:
+        reviewDto.status === SubscriptionPaymentStatus.CONFIRMED
+          ? 'پرداخت تایید و پلن فعال شد'
+          : 'پرداخت رد شد',
       data: updatePayment,
     };
   }
@@ -506,6 +568,7 @@ export class FinancialsService {
           select: {
             user_id: true,
             fullName: true,
+            masterPlan: true,
           },
         },
       },

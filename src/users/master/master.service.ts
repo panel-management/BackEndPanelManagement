@@ -367,6 +367,7 @@ export class MasterService {
         await this.prismaService.subscriptionPayment.findFirst({
           where: {
             masterId: masterId,
+            planId: master.masterPlanId,
             status: SubscriptionPaymentStatus.CONFIRMED,
           },
           orderBy: { updatedAt: 'desc' },
@@ -377,11 +378,40 @@ export class MasterService {
         endsAt = new Date(startsAt);
         endsAt.setDate(endsAt.getDate() + (plan.durationInDays || 0));
       } else {
+        const pendingPayment =
+          await this.prismaService.subscriptionPayment.findFirst({
+            where: {
+              masterId: masterId,
+              planId: master.masterPlanId,
+              status: SubscriptionPaymentStatus.PENDING,
+            },
+          });
+
+        if (pendingPayment) {
+          return {
+            statusCode: 202,
+            message:
+              'رسید پرداخت شما در حال بررسی است. لطفاً صبر کنید تا توسط ادمین تایید شود',
+            isActive: false,
+            isPending: true,
+            data: {
+              planName: plan.name,
+              planPrice: Number(plan.price || 0),
+              paymentStatus: 'PENDING',
+            },
+          };
+        }
+
         return {
           statusCode: 202,
-          message:
-            'دسترسی شما به امکانات محدود شده است. برای ادامه استفاده از پلن، لطفاً پرداخت را انجام دهید',
+          message: `شما پلن "${plan.name}" را انتخاب کرده‌اید. برای فعال‌سازی، لطفاً هزینه ${Number(plan.price || 0).toLocaleString('fa-IR')} تومان را پرداخت و رسید را ارسال کنید`,
           isActive: false,
+          needsPayment: true,
+          data: {
+            planName: plan.name,
+            planPrice: Number(plan.price || 0),
+            paymentStatus: 'NOT_PAID',
+          },
         };
       }
     }
@@ -389,8 +419,9 @@ export class MasterService {
     if (!startsAt || !endsAt || now > endsAt) {
       return {
         statusCode: 403,
-        message: 'پلن شما منقضی شده است',
+        message: 'پلن شما منقضی شده است. لطفاً پلن جدیدی انتخاب کنید',
         isActive: false,
+        isExpired: true,
       };
     }
 

@@ -58,6 +58,15 @@ export class FinancialsController {
     return this.financialsService.findAllPlans();
   }
 
+  // Delete Plan Student Payment
+  @Delete('plans/:id')
+  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deletePlanStudent(@Param('id', ParseIntPipe) id: number) {
+    return this.financialsService.deletePlanStudent(id);
+  }
+
   // Register equipment transaction
   @Post('transactions/equipment')
   @Roles(Role.Master)

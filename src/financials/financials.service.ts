@@ -40,11 +40,13 @@ export class FinancialsService {
       select: {
         id: true,
         name: true,
+        description: true,
         durationInDays: true,
         price: true,
         isDefault: true,
         transactions: true,
         assignedUsers: true,
+        createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -60,6 +62,27 @@ export class FinancialsService {
     return this.prisma.plan.findUnique({
       where: { id: planId },
     });
+  }
+
+  async deletePlanStudent(planId: number) {
+    const findPlanStudent = await this.findPlanById(planId);
+
+    if (!findPlanStudent) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'پلن یافت نشد لطف مجدد امتحان کنید',
+      });
+    }
+
+    const deletePlan = await this.prisma.plan.delete({
+      where: { id: planId },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'طرح با موفقیت حذف شد',
+      data: deletePlan,
+    };
   }
 
   async findMasterPlanById(planId: number) {
@@ -568,6 +591,7 @@ export class FinancialsService {
           select: {
             user_id: true,
             fullName: true,
+            phoneNumber: true,
             masterPlan: true,
           },
         },

@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -19,24 +21,75 @@ import { ReviewSubscriptionPaymentDto } from './dto/review-subscription-payment.
 import { SmsServiceService } from 'src/sms-service/sms-service.service';
 import { CreateMasterPlanDto } from 'src/users/master/dto/create-master-plan.dto';
 import { UpdateMasterPlanDto } from 'src/users/master/dto/update-master-plan.dto';
+import { MasterService } from 'src/users/master/master.service';
+import { Role } from 'src/auth/enums/role.enum';
 
 @Injectable()
 export class FinancialsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly smsService: SmsServiceService,
+    @Inject(forwardRef(() => MasterService))
+    private readonly masterService: MasterService,
   ) {}
 
-  async createPlan(createPlanDto: CreatePlanDto) {
+  async createPlan(masterId: number, createPlanDto: CreatePlanDto) {
+    const master = await this.prisma.users.findUnique({
+      where: { user_id: masterId },
+    });
+
+    if (!master) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'کاربری با این مشخصات یافت نشد',
+      });
+    }
+
+    if (master.type !== Role.Master) {
+      throw new BadRequestException({
+        statusCode: 403,
+        message: 'فقط استاد می‌تواند پلن ایجاد کند',
+      });
+    }
+
     const plan = await this.prisma.plan.create({
-      data: createPlanDto,
+      data: {
+        name: createPlanDto.name,
+        description: createPlanDto.description,
+        price: createPlanDto.price,
+        durationInDays: createPlanDto.durationInDays,
+        isDefault: createPlanDto.isDefault,
+        assignedUsers: { connect: { user_id: masterId } },
+      },
     });
 
     return { statusCode: 201, message: 'پلن با موفقیت ایجاد شد', data: plan };
   }
 
-  async findAllPlans() {
+  async findAllPlans(masterId: number) {
+    const master = await this.prisma.users.findUnique({
+      where: { user_id: masterId },
+      select: { type: true },
+    });
+
+    if (!master) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'کاربری با این مشخصات یافت نشد',
+      });
+    }
+
+    if (master.type !== Role.Master) {
+      throw new BadRequestException({
+        statusCode: 403,
+        message: 'شما مجاز به مشاهده پلن‌ها نیستید',
+      });
+    }
+
     const plans = await this.prisma.plan.findMany({
+      where: {
+        assignedUsers: { some: { user_id: masterId } },
+      },
       select: {
         id: true,
         name: true,
@@ -45,7 +98,6 @@ export class FinancialsService {
         price: true,
         isDefault: true,
         transactions: true,
-        assignedUsers: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -422,17 +474,33 @@ export class FinancialsService {
       });
     }
 
-    const pendingPayment = await this.prisma.subscriptionPayment.findFirst({
-      where: {
-        masterId: masterId,
-        status: SubscriptionPaymentStatus.PENDING,
-      },
-    });
+    const planStatus = await this.masterService.getMasterPlanStatus(masterId);
 
-    if (pendingPayment) {
+    if (planStatus.isActive) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: 'پلن شما در حال حاضر فعال است. نیازی به پرداخت جدید نیست',
+      });
+    }
+
+    if (planStatus.isPending) {
       throw new BadRequestException({
         statusCode: 400,
         message: 'شما یک پرداخت در انتظار تایید دارید',
+      });
+    }
+
+    if (planStatus.isExpired) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: 'پلن شما منقضی شده است. لطفاً ابتدا پلن جدیدی انتخاب کنید',
+      });
+    }
+
+    if (!planStatus.needsPayment) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: 'وضعیت پلن نامعتبر است. لطفاً وضعیت را بررسی کنید',
       });
     }
 

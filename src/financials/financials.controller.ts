@@ -46,16 +46,16 @@ export class FinancialsController {
   @Post('plans')
   @Roles(Role.Admin, Role.Master)
   @HttpCode(HttpStatus.CREATED)
-  createPlan(@Body() createPlanDto: CreatePlanDto) {
-    return this.financialsService.createPlan(createPlanDto);
+  createPlan(@Req() req, @Body() createPlanDto: CreatePlanDto) {
+    return this.financialsService.createPlan(req.user.userId, createPlanDto);
   }
 
   // Get all plans payment
   @Get('plans')
   @Roles(Role.Admin, Role.Master)
   @HttpCode(HttpStatus.OK)
-  findAllPlans() {
-    return this.financialsService.findAllPlans();
+  findAllPlans(@Req() req) {
+    return this.financialsService.findAllPlans(req.user.userId);
   }
 
   // Delete Plan Student Payment

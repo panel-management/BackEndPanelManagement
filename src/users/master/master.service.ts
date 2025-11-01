@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -58,6 +60,7 @@ type MasterWithAllDetails = Prisma.usersGetPayload<{
 export class MasterService {
   constructor(
     private readonly prismaService: PrismaService,
+    @Inject(forwardRef(() => FinancialsService))
     private readonly financialsService: FinancialsService,
     private readonly smsService: SmsServiceService,
   ) {}
@@ -353,70 +356,50 @@ export class MasterService {
 
     const plan = master.masterPlan;
     const now = new Date();
-    let startsAt: Date | null = null;
-    let endsAt: Date | null = null;
 
-    if (plan.type === MasterPlanType.TRIAL) {
-      endsAt = master.planEndsAt;
-      if (endsAt) {
-        startsAt = new Date(endsAt);
-        startsAt.setDate(startsAt.getDate() - (plan.durationInDays || 0));
-      }
-    } else {
-      const lastPayment =
-        await this.prismaService.subscriptionPayment.findFirst({
-          where: {
-            masterId: masterId,
-            planId: master.masterPlanId,
-            status: SubscriptionPaymentStatus.CONFIRMED,
-          },
-          orderBy: { updatedAt: 'desc' },
-        });
+    const pendingPayment =
+      await this.prismaService.subscriptionPayment.findFirst({
+        where: {
+          masterId: masterId,
+          planId: master.masterPlanId,
+          status: SubscriptionPaymentStatus.PENDING,
+        },
+      });
 
-      if (lastPayment) {
-        startsAt = lastPayment.updatedAt;
-        endsAt = new Date(startsAt);
-        endsAt.setDate(endsAt.getDate() + (plan.durationInDays || 0));
-      } else {
-        const pendingPayment =
-          await this.prismaService.subscriptionPayment.findFirst({
-            where: {
-              masterId: masterId,
-              planId: master.masterPlanId,
-              status: SubscriptionPaymentStatus.PENDING,
-            },
-          });
-
-        if (pendingPayment) {
-          return {
-            statusCode: 202,
-            message:
-              'رسید پرداخت شما در حال بررسی است. لطفاً صبر کنید تا توسط ادمین تایید شود',
-            isActive: false,
-            isPending: true,
-            data: {
-              planName: plan.name,
-              planPrice: Number(plan.price || 0),
-              paymentStatus: 'PENDING',
-            },
-          };
-        }
-
-        return {
-          statusCode: 202,
-          message: `شما پلن "${plan.name}" را انتخاب کرده‌اید. برای فعال‌سازی، لطفاً هزینه ${Number(plan.price || 0).toLocaleString('fa-IR')} تومان را پرداخت و رسید را ارسال کنید`,
-          isActive: false,
-          needsPayment: true,
-          data: {
-            planName: plan.name,
-            planPrice: Number(plan.price || 0),
-            paymentStatus: 'NOT_PAID',
-          },
-        };
-      }
+    if (pendingPayment) {
+      return {
+        statusCode: 202,
+        message:
+          'رسید پرداخت شما در حال بررسی است. لطفاً صبر کنید تا توسط ادمین تایید شود',
+        isActive: false,
+        isPending: true,
+        data: {
+          planName: plan.name,
+          planPrice: Number(plan.price || 0),
+          paymentStatus: 'PENDING',
+        },
+      };
     }
 
-    if (!startsAt || !endsAt || now > endsAt) {
+    if (!master.planEndsAt) {
+      return {
+        statusCode: 202,
+        message: `شما پلن "${plan.name}" را انتخاب کرده‌اید. برای فعال‌سازی، لطفاً هزینه ${Number(plan.price || 0).toLocaleString('fa-IR')} تومان را پرداخت و رسید را ارسال کنید`,
+        isActive: false,
+        needsPayment: true,
+        data: {
+          planName: plan.name,
+          planPrice: Number(plan.price || 0),
+          paymentStatus: 'NOT_PAID',
+        },
+      };
+    }
+
+    const startsAt = new Date(master.planEndsAt);
+    startsAt.setDate(startsAt.getDate() - (plan.durationInDays || 0));
+    const endsAt = master.planEndsAt;
+
+    if (now > endsAt) {
       return {
         statusCode: 403,
         message: 'پلن شما منقضی شده است. لطفاً پلن جدیدی انتخاب کنید',

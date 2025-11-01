@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MasterController } from './master.controller';
 import { MasterService } from './master.service';
 import { MulterModule } from '@nestjs/platform-express';
@@ -9,8 +9,8 @@ import { SmsServiceModule } from 'src/sms-service/sms-service.module';
 
 @Module({
   imports: [
-    FinancialsModule,
     SmsServiceModule,
+    forwardRef(() => FinancialsModule),
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/masters',
@@ -37,5 +37,6 @@ import { SmsServiceModule } from 'src/sms-service/sms-service.module';
   ],
   controllers: [MasterController],
   providers: [MasterService],
+  exports: [MasterService],
 })
 export class MasterModule {}

@@ -99,16 +99,18 @@ export class StudentService {
           message: `برای رشته ورزشی ${masterSport.sport.name} انتخاب کمربند الزامی است`,
         });
       }
-      if (dto.planId) {
-        const planExists = await this.financialsService.findPlanById(
-          dto.planId,
-        );
-        if (!planExists) {
-          throw new NotFoundException({
-            statusCode: 404,
-            message: 'پلن شهریه انتخاب شده معتبر نمی‌باشد.',
-          });
-        }
+      if (!dto.planId) {
+        throw new BadRequestException({
+          statusCode: 400,
+          message: 'انتخاب پلن برای هنرجو الزامی است',
+        });
+      }
+      const planExists = await this.financialsService.findPlanById(dto.planId);
+      if (!planExists || planExists.masterId !== masterId) {
+        throw new NotFoundException({
+          statusCode: 404,
+          message: 'پلن شهریه انتخاب شده معتبر نیست یا متعلق به شما نمی‌ باشد',
+        });
       }
       const newUser = await this.prismaService.users.create({
         data: {
@@ -121,7 +123,9 @@ export class StudentService {
           address: dto.address,
           underSupervisionDoctor: dto.underSupervisionDoctor,
           diseaseRecords: dto.diseaseRecords,
-          plan: dto.planId ? { connect: { id: dto.planId } } : undefined,
+          assignedPlan: dto.planId
+            ? { connect: { id: dto.planId } }
+            : undefined,
           achievedBelts: {
             connect: dto.beltIds?.map((id) => ({ id })),
           },
@@ -148,7 +152,7 @@ export class StudentService {
           achievedBelts: true,
           currentBelt: true,
           type: true,
-          plan: true,
+          assignedPlan: true,
           sport: true,
           createdAt: true,
         },

@@ -32,7 +32,7 @@ export class UserService {
         currentBeltId: true,
         sport: true,
         sportId: true,
-        plan: true,
+        assignedPlan: true,
         planId: true,
         masterPlan: true,
         masterPlanId: true,

@@ -56,7 +56,6 @@ export class CreateStudentDto {
   beltIds?: number[];
 
   @IsInt()
-  @IsOptional()
   @Type(() => Number)
-  planId?: number;
+  planId: number;
 }

@@ -28,6 +28,7 @@ import { CreateMasterPlanDto } from 'src/users/master/dto/create-master-plan.dto
 import { UpdateMasterPlanDto } from 'src/users/master/dto/update-master-plan.dto';
 import { Request } from 'express';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { UpdatePlanDto } from './dto/update-plan.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -47,7 +48,10 @@ export class FinancialsController {
   @Roles(Role.Admin, Role.Master)
   @HttpCode(HttpStatus.CREATED)
   createPlan(@Req() req, @Body() createPlanDto: CreatePlanDto) {
-    return this.financialsService.createPlan(req.user.userId, createPlanDto);
+    return this.financialsService.createPlanStudent(
+      req.user.userId,
+      createPlanDto,
+    );
   }
 
   // Get all plans payment
@@ -56,6 +60,22 @@ export class FinancialsController {
   @HttpCode(HttpStatus.OK)
   findAllPlans(@Req() req) {
     return this.financialsService.findAllPlans(req.user.userId);
+  }
+
+  // Update Plan Student Payment
+  @Put('plans/:id')
+  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
+  updatePlanStudent(
+    @Req() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updatePlanDto: UpdatePlanDto,
+  ) {
+    return this.financialsService.updatePlanStudent(
+      id,
+      req.user.userId,
+      updatePlanDto,
+    );
   }
 
   // Delete Plan Student Payment

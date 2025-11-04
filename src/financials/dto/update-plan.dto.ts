@@ -1,15 +1,7 @@
 import { Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsInt,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
 
-export class CreatePlanDto {
+export class UpdatePlanDto {
   @IsString()
   @IsNotEmpty()
   name: string;
@@ -27,8 +19,4 @@ export class CreatePlanDto {
   @IsInt()
   @Min(1)
   durationInDays: number;
-
-  @IsBoolean()
-  @IsOptional()
-  isDefault?: boolean;
 }

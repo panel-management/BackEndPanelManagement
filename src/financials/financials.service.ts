@@ -23,6 +23,7 @@ import { CreateMasterPlanDto } from 'src/users/master/dto/create-master-plan.dto
 import { UpdateMasterPlanDto } from 'src/users/master/dto/update-master-plan.dto';
 import { MasterService } from 'src/users/master/master.service';
 import { Role } from 'src/auth/enums/role.enum';
+import { UpdatePlanDto } from './dto/update-plan.dto';
 
 @Injectable()
 export class FinancialsService {
@@ -33,7 +34,7 @@ export class FinancialsService {
     private readonly masterService: MasterService,
   ) {}
 
-  async createPlan(masterId: number, createPlanDto: CreatePlanDto) {
+  async createPlanStudent(masterId: number, createPlanDto: CreatePlanDto) {
     const master = await this.prisma.users.findUnique({
       where: { user_id: masterId },
     });
@@ -54,12 +55,12 @@ export class FinancialsService {
 
     const plan = await this.prisma.plan.create({
       data: {
+        masterId: masterId,
         name: createPlanDto.name,
         description: createPlanDto.description,
         price: createPlanDto.price,
         durationInDays: createPlanDto.durationInDays,
         isDefault: createPlanDto.isDefault,
-        assignedUsers: { connect: { user_id: masterId } },
       },
     });
 
@@ -88,7 +89,7 @@ export class FinancialsService {
 
     const plans = await this.prisma.plan.findMany({
       where: {
-        assignedUsers: { some: { user_id: masterId } },
+        masterId: masterId,
       },
       select: {
         id: true,
@@ -114,6 +115,38 @@ export class FinancialsService {
     return this.prisma.plan.findUnique({
       where: { id: planId },
     });
+  }
+
+  async updatePlanStudent(
+    planId: number,
+    masterId: number,
+    updatePlanDto: UpdatePlanDto,
+  ) {
+    const findPlanStudent = await this.findPlanById(planId);
+
+    if (!findPlanStudent) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'پلن یافت نشد لطف مجدد امتحان کنید',
+      });
+    }
+
+    const updatePlan = await this.prisma.plan.update({
+      where: { id: planId },
+      data: {
+        masterId: masterId,
+        name: updatePlanDto.name,
+        description: updatePlanDto.description,
+        price: updatePlanDto.price,
+        durationInDays: updatePlanDto.durationInDays,
+      },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'طرح با موفقیت اپدیت شد',
+      data: updatePlan,
+    };
   }
 
   async deletePlanStudent(planId: number) {

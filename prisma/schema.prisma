@@ -125,7 +125,8 @@ model users {
   MarkedAttendances      Attendance[] @relation("MarkedAttendances")
   // payments & plans
   planId                 Int?
-  plan                   Plan?        @relation(fields: [planId], references: [id], onDelete: Restrict)
+  assignedPlan           Plan?        @relation("assignedUsersPlan", fields: [planId], references: [id], onDelete: Restrict)
+  createdPlans           Plan[]       @relation("MasterPlans")
 
   studentTransactions  Transaction[]         @relation("StudentTransactions")
   createdTransactions  Transaction[]         @relation("CreatedTransactions")
@@ -184,12 +185,15 @@ model Attendance {
 model Plan {
   id             Int     @id @unique @default(autoincrement())
   name           String
-  description    String?
+  description    String
   price          Decimal @db.Decimal(12, 2)
   durationInDays Int
   isDefault      Boolean @default(false)
 
-  assignedUsers users[]
+  masterId Int
+  master   users @relation("MasterPlans", fields: [masterId], references: [user_id], onDelete: Cascade)
+
+  assignedUsers users[]       @relation("assignedUsersPlan")
   transactions  Transaction[]
 
   createdAt DateTime @default(now())
@@ -209,7 +213,7 @@ model MasterPlan {
   isActive Boolean  @default(true)
 
   assignedMasters users[]
-  payments SubscriptionPayment[]
+  payments        SubscriptionPayment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -254,8 +258,8 @@ model SubscriptionPayment {
   masterId Int
   master   users @relation("MasterPayments", fields: [masterId], references: [user_id], onDelete: Cascade)
 
-  planId     Int?
-  plan       MasterPlan? @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId Int?
+  plan   MasterPlan? @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   confirmerId Int?
   confirmer   users? @relation("ConfirmedByAdmin", fields: [confirmerId], references: [user_id], onDelete: SetNull)
@@ -306,10 +310,10 @@ model ClubProfile {
   clubName        String?
   activityType    String?
   clubAddress     String?
-  aboutClub       String? @db.Text
+  aboutClub       String?   @db.Text
   clubPhoneNumber String?
   foundationDate  DateTime?
-  goal            String? @db.Text
+  goal            String?   @db.Text
   socialNetworks  Json?
 
   isProfileComplete Boolean @default(false)

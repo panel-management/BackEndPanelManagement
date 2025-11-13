@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateStudentDto } from './dto/create-student.dto';
-import { Belt, Prisma } from '@prisma/client';
+import { Belt, Prisma, SubscriptionPaymentStatus } from '@prisma/client';
 import { Role } from 'src/auth/enums/role.enum';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { FinancialsService } from 'src/financials/financials.service';
@@ -39,10 +39,16 @@ export class StudentService {
       select: {
         user_id: true,
         fullName: true,
+        phoneNumber: true,
+        active: true,
         currentBelt: true,
         achievedBelts: true,
-        active: true,
         sport: true,
+        subscriptionPayments: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
         createdAt: true,
         updatedAt: true,
       },
@@ -50,10 +56,25 @@ export class StudentService {
         createdAt: 'desc',
       },
     });
+
+    const studentsWithStatus = users.map((student) => {
+      const latestPayment = student.subscriptionPayments[0];
+      let status: SubscriptionPaymentStatus | 'NO_PAYMENT' = 'NO_PAYMENT';
+
+      if (latestPayment) {
+        status = latestPayment.status;
+      }
+
+      return {
+        ...student,
+        paymentStatus: status,
+      };
+    });
+
     return {
       statusCode: 200,
       message: 'هنرجو ها با موفقیت دریافت شد',
-      data: users,
+      data: studentsWithStatus,
     };
   }
 

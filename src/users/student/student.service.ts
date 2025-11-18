@@ -81,7 +81,26 @@ export class StudentService {
   async getById(studentId: number, masterId: number) {
     const student = await this.prismaService.users.findUnique({
       where: { user_id: studentId },
-      include: { sport: true },
+      select: {
+        fullName: true,
+        phoneNumber: true,
+        phoneNumberEmergency: true,
+        nationalCode: true,
+        address: true,
+        age: true,
+        birthDate: true,
+        diseaseRecords: true,
+        underSupervisionDoctor: true,
+        active: true,
+        achievedBelts: true,
+        currentBelt: true,
+        sport: true,
+        subscriptionPayments: true,
+        type: true,
+        masterId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     if (

@@ -45,7 +45,7 @@ export class FinancialsController {
 
   // Create plan design payment
   @Post('plans')
-  @Roles(Role.Admin, Role.Master)
+  @Roles(Role.Master)
   @HttpCode(HttpStatus.CREATED)
   createPlan(@Req() req, @Body() createPlanDto: CreatePlanDto) {
     return this.financialsService.createPlanStudent(
@@ -56,7 +56,7 @@ export class FinancialsController {
 
   // Get all plans payment
   @Get('plans')
-  @Roles(Role.Admin, Role.Master)
+  @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   findAllPlans(@Req() req) {
     return this.financialsService.findAllPlans(req.user.userId);

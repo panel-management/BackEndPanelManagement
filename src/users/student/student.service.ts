@@ -78,6 +78,7 @@ export class StudentService {
     };
   }
 
+  // get student by id for master
   async getById(studentId: number, masterId: number) {
     const student = await this.prismaService.users.findUnique({
       where: { user_id: studentId },
@@ -108,6 +109,52 @@ export class StudentService {
       student.masterId !== masterId ||
       student.type !== Role.Student
     ) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'هنرجویی با این مشخاصت یافت نشد',
+      });
+    }
+
+    return {
+      statusCode: 200,
+      message: 'هنرجو با موفقیت دریافت شد',
+      data: student,
+    };
+  }
+
+  // get student by id for student himself
+  async getStudentById(studentId: number) {
+    const student = await this.prismaService.users.findUnique({
+      where: { user_id: studentId },
+      select: {
+        fullName: true,
+        phoneNumber: true,
+        phoneNumberEmergency: true,
+        nationalCode: true,
+        address: true,
+        age: true,
+        birthDate: true,
+        diseaseRecords: true,
+        underSupervisionDoctor: true,
+        active: true,
+        achievedBelts: true,
+        currentBelt: true,
+        sport: true,
+        subscriptionPayments: true,
+        type: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (student?.type !== Role.Student) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'هنرجویی با این مشخاصت یافت نشد',
+      });
+    }
+
+    if (!student) {
       throw new NotFoundException({
         statusCode: 404,
         message: 'هنرجویی با این مشخاصت یافت نشد',
@@ -225,7 +272,8 @@ export class StudentService {
     }
   }
 
-  async updateStudentById(
+  // Update Student by Master
+  async updateById(
     studentId: number,
     masterId: number,
     dto: UpdateStudentDto,
@@ -235,6 +283,57 @@ export class StudentService {
     data: UpdatedStudentData;
   }> {
     await this.getById(studentId, masterId);
+    const updateStudent = await this.prismaService.users.update({
+      where: { user_id: studentId, type: Role.Student },
+      data: {
+        fullName: dto.fullName,
+        nationalCode: dto.nationalCode,
+        birthDate: dto.birthDate,
+        age: dto.age,
+        phoneNumber: dto.phoneNumber,
+        phoneNumberEmergency: dto.phoneNumberEmergency,
+        address: dto.address,
+        underSupervisionDoctor: dto.underSupervisionDoctor,
+        diseaseRecords: dto.diseaseRecords,
+        achievedBelts: {
+          connect: dto.beltIds?.map((id) => ({ id })),
+        },
+        currentBelt: dto.beltIds?.[0]
+          ? { connect: { id: dto.beltIds[0] } }
+          : undefined,
+      },
+      select: {
+        user_id: true,
+        fullName: true,
+        nationalCode: true,
+        birthDate: true,
+        age: true,
+        phoneNumber: true,
+        phoneNumberEmergency: true,
+        address: true,
+        underSupervisionDoctor: true,
+        diseaseRecords: true,
+        achievedBelts: true,
+        currentBelt: true,
+      },
+    });
+    return {
+      statusCode: 200,
+      message: 'پروفایل با موفقیت بروزرسانی شد',
+      data: updateStudent,
+    };
+  }
+
+  // Update Student by himself
+  async updateStudentById(
+    studentId: number,
+    dto: UpdateStudentDto,
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: UpdatedStudentData;
+  }> {
+    await this.getStudentById(studentId);
     const updateStudent = await this.prismaService.users.update({
       where: { user_id: studentId, type: Role.Student },
       data: {

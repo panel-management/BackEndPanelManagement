@@ -32,10 +32,19 @@ export class StudentController {
     return this.studentService.findAll(req.user.userId);
   }
 
-  @Get('/:id')
-  @Roles(Role.Master, Role.Student)
+  // See You Profile Just yourself student
+  @Get('/details')
+  @Roles(Role.Student)
   @HttpCode(HttpStatus.OK)
-  getStudentById(@Req() req, @Param('id', ParseIntPipe) studentId: number) {
+  getStudentById(@Req() req) {
+    return this.studentService.getStudentById(req.user.userId);
+  }
+
+  // See Student Profile by Id for Master
+  @Get('/:id')
+  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
+  getById(@Req() req, @Param('id', ParseIntPipe) studentId: number) {
     return this.studentService.getById(studentId, req.user.userId);
   }
 
@@ -46,15 +55,27 @@ export class StudentController {
     return this.studentService.createStudent(req.user.userId, createStudentDto);
   }
 
-  @Put('/:id')
-  @Roles(Role.Master, Role.Student)
+  // See You Update Profile Just yourself student
+  @Put('/update/details')
+  @Roles(Role.Student)
   @HttpCode(HttpStatus.OK)
-  updateStudent(
+  updateStudent(@Req() req, @Body() updateStudentDto: UpdateStudentDto) {
+    return this.studentService.updateStudentById(
+      req.user.userId,
+      updateStudentDto,
+    );
+  }
+
+  // Update Student by Master
+  @Put('/:id')
+  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
+  updateStudentByMaster(
     @Req() req,
     @Param('id', ParseIntPipe) studentId: number,
     @Body() updateStudentDto: UpdateStudentDto,
   ) {
-    return this.studentService.updateStudentById(
+    return this.studentService.updateById(
       studentId,
       req.user.userId,
       updateStudentDto,

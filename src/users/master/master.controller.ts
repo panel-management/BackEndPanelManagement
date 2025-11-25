@@ -51,25 +51,12 @@ export class MasterController {
     return this.masterService.getMasterByIdSeeAdmin(masterId);
   }
 
-  // See All Update Profile Master Just Admin
-  @Put('/update/:id')
-  @Roles(Role.Admin)
-  @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor('imageFile'))
-  updateMasterByAdmin(
-    @Param('id', ParseIntPipe) masterId: number,
-    @Body() updateMasterDto: UpdateMasterDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.masterService.updateMaster(masterId, updateMasterDto, file);
-  }
-
   // See You Update Profile Just yourself master
   @Put('/update/details')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('imageFile'))
-  updateMaster(
+  updateMasterByAdmin(
     @Req() req,
     @Body() updateMasterDto: UpdateMasterDto,
     @UploadedFile() file: Express.Multer.File,
@@ -79,6 +66,19 @@ export class MasterController {
       updateMasterDto,
       file,
     );
+  }
+
+  // See All Update Profile Master Just Admin
+  @Put('/update/:id')
+  @Roles(Role.Admin)
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('imageFile'))
+  updateMaster(
+    @Param('id', ParseIntPipe) masterId: number,
+    @Body() updateMasterDto: UpdateMasterDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.masterService.updateMaster(masterId, updateMasterDto, file);
   }
 
   @Put('/changeStatus/:id')

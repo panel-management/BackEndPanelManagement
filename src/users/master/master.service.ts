@@ -41,7 +41,6 @@ type MasterWithAllDetails = Prisma.usersGetPayload<{
     nationalCode: true;
     phoneNumber: true;
     history: true;
-    image: true;
     active: true;
     type: true;
     sport: true;
@@ -102,7 +101,6 @@ export class MasterService {
         nationalCode: true,
         phoneNumber: true,
         history: true,
-        image: true,
         active: true,
         type: true,
         sport: true,
@@ -145,10 +143,35 @@ export class MasterService {
   async getMasterById(masterId: number) {
     const getMaster = await this.prismaService.users.findUnique({
       where: { user_id: masterId, type: Role.Master },
-      include: {
+      select: {
+        user_id: true,
+        type: true,
+        fullName: true,
+        phoneNumber: true,
+        nationalCode: true,
+        image: true,
+        active: true,
+        age: true,
+        birthDate: true,
+        history: true,
+        certificates: true,
         sport: true,
-        students: true,
         masterPlan: true,
+        students: {
+          select: {
+            user_id: true,
+            fullName: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        subscriptionPayments: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+        createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -177,10 +200,36 @@ export class MasterService {
   async getMasterByIdSeeAdmin(masterId: number) {
     const getMaster = await this.prismaService.users.findUnique({
       where: { user_id: masterId, type: Role.Master },
-      include: {
+      select: {
+        user_id: true,
+        type: true,
+        fullName: true,
+        phoneNumber: true,
+        nationalCode: true,
+        image: true,
+        active: true,
+        age: true,
+        birthDate: true,
+        history: true,
+        certificates: true,
         sport: true,
-        students: true,
         masterPlan: true,
+        students: {
+          select: {
+            user_id: true,
+            fullName: true,
+            currentBelt: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        subscriptionPayments: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+        createdAt: true,
+        updatedAt: true,
       },
     });
 

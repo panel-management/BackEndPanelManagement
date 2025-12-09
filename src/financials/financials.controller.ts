@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
@@ -9,6 +10,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -29,6 +31,7 @@ import { UpdateMasterPlanDto } from 'src/users/master/dto/update-master-plan.dto
 import { Request } from 'express';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdatePlanDto } from './dto/update-plan.dto';
+import { RejectPaymentDto } from './dto/reject-payment.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -117,12 +120,47 @@ export class FinancialsController {
     );
   }
 
-  // Transactions history
-  @Get('transactions/my')
-  @Roles(Role.Master, Role.Student)
+  // Rejects a manual payment
+  @Post('transactions/:id/reject')
+  @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  getMyTransactions(@Req() req) {
-    return this.financialsService.getStudentTransactions(req.user.userId);
+  rejectPayment(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() rejectDto: RejectPaymentDto,
+  ) {
+    return this.financialsService.rejectManualPayment(id, rejectDto);
+  }
+
+  // Transactions Master history
+  @Get('transactions/master/history')
+  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
+  getMyTransactions(
+    @Req() req,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.financialsService.getMasterTransactions(
+      req.user.userId,
+      page,
+      limit,
+    );
+  }
+
+  // Transactions student history
+  @Get('transactions/student/history')
+  @Roles(Role.Student)
+  @HttpCode(HttpStatus.OK)
+  getStudentTransactions(
+    @Req() req,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.financialsService.getStudentTransactions(
+      req.user.userId,
+      page,
+      limit,
+    );
   }
 
   // Returns the financial dashboard and debtor list for master

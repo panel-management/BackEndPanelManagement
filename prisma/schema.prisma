@@ -134,19 +134,20 @@ model users {
   confirmedStudentTxs  Transaction[]         @relation("ConfirmedByAdmin")
   confirmedMasterSubs  SubscriptionPayment[] @relation("ConfirmedByAdmin")
 
-  masterPlanId Int?
-  masterPlan   MasterPlan?     @relation(fields: [masterPlanId], references: [id], onDelete: SetNull)
-  planEndsAt   DateTime?
-  hasUsedTrial Boolean         @default(false)
+  masterPlanId     Int?
+  masterPlan       MasterPlan?     @relation(fields: [masterPlanId], references: [id], onDelete: SetNull)
+  planEndsAt       DateTime?
+  lastFeeGenerated DateTime?
+  hasUsedTrial     Boolean         @default(false)
   // Relations for Support Tickets
-  tickets      Ticket[]        @relation("UserTickets")
-  sentMessages TicketMessage[] @relation("UserSentMessages")
+  tickets          Ticket[]        @relation("UserTickets")
+  sentMessages     TicketMessage[] @relation("UserSentMessages")
   // Club Profile Info
-  clubProfile  ClubProfile?
+  clubProfile      ClubProfile?
   // System Fields
-  active       Active          @default(ENABLE)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  active           Active          @default(ENABLE)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@map("users")
 }

@@ -373,118 +373,118 @@ export class MasterService {
     };
   }
 
-  // select plan just your self master
-  async getMasterPlanStatus(masterId: number) {
-    const master = await this.prismaService.users.findUnique({
-      where: { user_id: masterId },
-      include: { masterPlan: true },
-    });
+  // // select plan just your self master
+  // async getMasterPlanStatus(masterId: number) {
+  //   const master = await this.prismaService.users.findUnique({
+  //     where: { user_id: masterId },
+  //     include: { masterPlan: true },
+  //   });
 
-    if (master?.type === Role.Admin) {
-      return {
-        statusCode: 200,
-        message: 'شما دسترسی ادمین دارید',
-        isActive: true,
-        isAdmin: true,
-        data: {
-          planName: 'دسترسی نامحدود ادمین',
-          planType: 'UNLIMITED',
-          isActive: true,
-          isAdmin: true,
-        },
-      };
-    }
+  //   if (master?.type === Role.Admin) {
+  //     return {
+  //       statusCode: 200,
+  //       message: 'شما دسترسی ادمین دارید',
+  //       isActive: true,
+  //       isAdmin: true,
+  //       data: {
+  //         planName: 'دسترسی نامحدود ادمین',
+  //         planType: 'UNLIMITED',
+  //         isActive: true,
+  //         isAdmin: true,
+  //       },
+  //     };
+  //   }
 
-    if (!master || !master.masterPlan) {
-      return {
-        statusCode: 200,
-        message: 'شما در حال حاضر هیچ پلن فعالی ندارید',
-        isActive: false,
-      };
-    }
+  //   if (!master || !master.masterPlan) {
+  //     return {
+  //       statusCode: 200,
+  //       message: 'شما در حال حاضر هیچ پلن فعالی ندارید',
+  //       isActive: false,
+  //     };
+  //   }
 
-    const plan = master.masterPlan;
-    const now = new Date();
+  //   const plan = master.masterPlan;
+  //   const now = new Date();
 
-    const pendingPayment =
-      await this.prismaService.subscriptionPayment.findFirst({
-        where: {
-          masterId: masterId,
-          planId: master.masterPlanId,
-          status: SubscriptionPaymentStatus.PENDING,
-        },
-      });
+  //   const pendingPayment =
+  //     await this.prismaService.subscriptionPayment.findFirst({
+  //       where: {
+  //         masterId: masterId,
+  //         planId: master.masterPlanId,
+  //         status: SubscriptionPaymentStatus.PENDING,
+  //       },
+  //     });
 
-    if (pendingPayment) {
-      return {
-        statusCode: 202,
-        message:
-          'رسید پرداخت شما در حال بررسی است. لطفاً صبر کنید تا توسط ادمین تایید شود',
-        isActive: false,
-        isPending: true,
-        data: {
-          planName: plan.name,
-          planPrice: Number(plan.price || 0),
-          paymentStatus: 'PENDING',
-        },
-      };
-    }
+  //   if (pendingPayment) {
+  //     return {
+  //       statusCode: 202,
+  //       message:
+  //         'رسید پرداخت شما در حال بررسی است. لطفاً صبر کنید تا توسط ادمین تایید شود',
+  //       isActive: false,
+  //       isPending: true,
+  //       data: {
+  //         planName: plan.name,
+  //         planPrice: Number(plan.price || 0),
+  //         paymentStatus: 'PENDING',
+  //       },
+  //     };
+  //   }
 
-    if (!master.planEndsAt) {
-      return {
-        statusCode: 202,
-        message: `شما پلن "${plan.name}" را انتخاب کرده‌اید. برای فعال‌سازی، لطفاً هزینه ${Number(plan.price || 0).toLocaleString('fa-IR')} تومان را پرداخت و رسید را ارسال کنید`,
-        isActive: false,
-        needsPayment: true,
-        data: {
-          planName: plan.name,
-          planPrice: Number(plan.price || 0),
-          paymentStatus: 'NOT_PAID',
-        },
-      };
-    }
+  //   if (!master.planEndsAt) {
+  //     return {
+  //       statusCode: 202,
+  //       message: `شما پلن "${plan.name}" را انتخاب کرده‌اید. برای فعال‌سازی، لطفاً هزینه ${Number(plan.price || 0).toLocaleString('fa-IR')} تومان را پرداخت و رسید را ارسال کنید`,
+  //       isActive: false,
+  //       needsPayment: true,
+  //       data: {
+  //         planName: plan.name,
+  //         planPrice: Number(plan.price || 0),
+  //         paymentStatus: 'NOT_PAID',
+  //       },
+  //     };
+  //   }
 
-    const startsAt = new Date(master.planEndsAt);
-    startsAt.setDate(startsAt.getDate() - (plan.durationInDays || 0));
-    const endsAt = master.planEndsAt;
+  //   const startsAt = new Date(master.planEndsAt);
+  //   startsAt.setDate(startsAt.getDate() - (plan.durationInDays || 0));
+  //   const endsAt = master.planEndsAt;
 
-    if (now > endsAt) {
-      return {
-        statusCode: 403,
-        message: 'پلن شما منقضی شده است. لطفاً پلن جدیدی انتخاب کنید',
-        isActive: false,
-        isExpired: true,
-      };
-    }
+  //   if (now > endsAt) {
+  //     return {
+  //       statusCode: 403,
+  //       message: 'پلن شما منقضی شده است. لطفاً پلن جدیدی انتخاب کنید',
+  //       isActive: false,
+  //       isExpired: true,
+  //     };
+  //   }
 
-    const totalDurationMs = endsAt.getTime() - startsAt.getTime();
-    const elapsedMs = now.getTime() - startsAt.getTime();
-    const daysTotal = Math.round(totalDurationMs / (1000 * 60 * 60 * 24));
-    const daysLeft = Math.ceil(
-      (endsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    const progressPercentage = Math.min(
-      100,
-      (elapsedMs / totalDurationMs) * 100,
-    );
+  //   const totalDurationMs = endsAt.getTime() - startsAt.getTime();
+  //   const elapsedMs = now.getTime() - startsAt.getTime();
+  //   const daysTotal = Math.round(totalDurationMs / (1000 * 60 * 60 * 24));
+  //   const daysLeft = Math.ceil(
+  //     (endsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+  //   );
+  //   const progressPercentage = Math.min(
+  //     100,
+  //     (elapsedMs / totalDurationMs) * 100,
+  //   );
 
-    const data = {
-      planName: plan.name,
-      planType: plan.type,
-      isActive: true,
-      startsAt: startsAt.toISOString(),
-      endsAt: endsAt.toISOString(),
-      daysTotal: daysTotal,
-      daysLeft: daysLeft,
-      progressPercentage: parseFloat(progressPercentage.toFixed(1)),
-    };
+  //   const data = {
+  //     planName: plan.name,
+  //     planType: plan.type,
+  //     isActive: true,
+  //     startsAt: startsAt.toISOString(),
+  //     endsAt: endsAt.toISOString(),
+  //     daysTotal: daysTotal,
+  //     daysLeft: daysLeft,
+  //     progressPercentage: parseFloat(progressPercentage.toFixed(1)),
+  //   };
 
-    return {
-      statusCode: 200,
-      message: 'وضعیت پلن با موفقیت دریافت شد',
-      data: data,
-    };
-  }
+  //   return {
+  //     statusCode: 200,
+  //     message: 'وضعیت پلن با موفقیت دریافت شد',
+  //     data: data,
+  //   };
+  // }
 
   // select plan just your self master
   async selectPlanForSelf(masterId: number, planId: number) {

@@ -116,13 +116,13 @@ export class MasterController {
     );
   }
 
-  // select plan just your self master
-  @Get('my-plan/status')
-  @Roles(Role.Master, Role.Admin)
-  @HttpCode(HttpStatus.OK)
-  getMyPlanStatus(@Req() req) {
-    return this.masterService.getMasterPlanStatus(req.user.userId);
-  }
+  // // select plan just your self master
+  // @Get('my-plan/status')
+  // @Roles(Role.Master, Role.Admin, Role.Student, Role.Coach)
+  // @HttpCode(HttpStatus.OK)
+  // getMyPlanStatus(@Req() req) {
+  //   return this.masterService.getMasterPlanStatus(req.user.userId);
+  // }
 
   // delete master just admin
   @Delete('/:id')

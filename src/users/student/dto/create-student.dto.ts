@@ -52,8 +52,7 @@ export class CreateStudentDto {
 
   @IsArray()
   @IsInt({ each: true, message: 'هر شناسه کمربند باید یک عدد باشد' })
-  @IsOptional()
-  beltIds?: number[];
+  beltIds: number[];
 
   @IsInt()
   @Type(() => Number)

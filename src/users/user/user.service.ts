@@ -175,6 +175,15 @@ export class UserService {
       };
     }
 
+    if (user.type === Role.Coach) {
+      return {
+        statusCode: 200,
+        message: 'مربی بدون پلن ؟؟؟',
+        userType: 'COACH',
+        isActive: true,
+      };
+    }
+
     if (user.type === Role.Student) {
       if (!user.assignedPlan) {
         return {

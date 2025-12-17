@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   HttpCode,
   HttpStatus,
@@ -8,6 +9,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -35,8 +37,22 @@ export class TicketsController {
   @Get()
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  getUsersTickets(@Req() req) {
-    return this.ticketsService.getUsersTickets(req.user.userId);
+  getTicketMaster(
+    @Req() req,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.ticketsService.getTicketMasters(req.user.userId, page, limit);
+  }
+
+  @Get('/admin/all')
+  @Roles(Role.Admin)
+  @HttpCode(HttpStatus.OK)
+  getTicketAdmin(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.ticketsService.getTicketAdmins(page, limit);
   }
 
   @Get('/:id')
@@ -59,13 +75,6 @@ export class TicketsController {
       createTicketMessageDto,
       req.user.userId,
     );
-  }
-
-  @Get('/admin/all')
-  @Roles(Role.Admin)
-  @HttpCode(HttpStatus.OK)
-  findAll() {
-    return this.ticketsService.getAllTickets();
   }
 
   @Put('/:id/status')

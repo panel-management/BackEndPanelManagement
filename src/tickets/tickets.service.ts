@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
-import { users } from '@prisma/client';
+import { TicketPriority, TicketStatus, users } from '@prisma/client';
 import { CreateTicketMessageDto } from './dto/create-ticket-message.dto';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
 import { Role } from 'src/auth/enums/role.enum';
@@ -19,26 +19,44 @@ export class TicketsService {
   ) {}
 
   // view all tickets (user)
-  async getUsersTickets(masterId: number) {
+  async getTicketMasters(masterId: number, page: number, limit: number) {
+    const total = await this.prisma.ticket.count({
+      where: { userId: masterId },
+    });
+
     const tickets = await this.prisma.ticket.findMany({
       where: { userId: masterId },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        priority: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
         user: {
           select: {
             user_id: true,
             fullName: true,
             phoneNumber: true,
-            type: true,
           },
         },
       },
       orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
     return {
       statusCode: 200,
       message: 'لیست تیکت ها با موفقیت دریافت شد',
       data: tickets,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -51,28 +69,35 @@ export class TicketsService {
         id: ticketId,
         userId: user.type === Role.Admin ? undefined : user.user_id,
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        priority: true,
+        status: true,
         user: {
           select: {
-            user_id: true,
             fullName: true,
-            phoneNumber: true,
-            type: true,
           },
         },
         messages: {
-          orderBy: { createdAt: 'asc' },
-          include: {
+          select: {
+            id: true,
+            text: true,
             sender: {
               select: {
                 user_id: true,
                 fullName: true,
-                phoneNumber: true,
                 type: true,
               },
             },
+            senderId: true,
+            ticketId: true,
+            createdAt: true,
           },
         },
+        createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -91,20 +116,65 @@ export class TicketsService {
   }
 
   // view all tickets (admin)
-  async getAllTickets() {
-    const tickets = await this.prisma.ticket.findMany({
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        user: {
-          select: { user_id: true, fullName: true, phoneNumber: true },
-        },
-      },
-    });
+  async getTicketAdmins(page: number, limit: number) {
+    const where = {};
+
+    const [total, openTickets, pendingTickets, highPriorityTickets, tickets] =
+      await this.prisma.$transaction([
+        this.prisma.ticket.count({ where }),
+
+        this.prisma.ticket.count({
+          where: { status: TicketStatus.OPEN },
+        }),
+
+        this.prisma.ticket.count({
+          where: { status: TicketStatus.PENDING },
+        }),
+
+        this.prisma.ticket.count({
+          where: { priority: TicketPriority.HIGH },
+        }),
+
+        this.prisma.ticket.findMany({
+          where,
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            priority: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+            user: {
+              select: {
+                user_id: true,
+                fullName: true,
+                type: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+      ]);
 
     return {
       statusCode: 200,
-      message: 'لیست تیکت ها با موفقیت دریافت شد',
+      message: 'لیست تیکت‌ها با موفقیت دریافت شد',
       data: tickets,
+      stats: {
+        total,
+        open: openTickets,
+        pending: pendingTickets,
+        highPriority: highPriorityTickets,
+      },
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -119,6 +189,13 @@ export class TicketsService {
         status: updateTicketStatusDto.status,
       },
     });
+
+    if (ticketStatus.status === 'CLOSED') {
+      throw new ForbiddenException({
+        statusCode: 403,
+        message: 'تیکت بسته شده و دیگه نمی توانید وضعیت ان را تغییر دهید',
+      });
+    }
 
     return {
       statusCode: 200,
@@ -173,6 +250,19 @@ export class TicketsService {
       where: { id: ticketId },
       include: { user: true },
     });
+
+    const sender = await this.prisma.users.findUnique({
+      where: { user_id: senderId },
+      select: { type: true, fullName: true },
+    });
+
+    if (!sender) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'فرستنده یافت نشد',
+      });
+    }
+
     if (!findTicket) {
       throw new NotFoundException({
         statusCode: 404,
@@ -193,16 +283,41 @@ export class TicketsService {
         senderId: senderId,
         ticketId: ticketId,
       },
+      include: {
+        sender: {
+          select: {
+            fullName: true,
+            type: true,
+          },
+        },
+      },
+    });
+
+    let newStatus: TicketStatus;
+    if (sender?.type === Role.Master) {
+      newStatus = TicketStatus.PENDING;
+    } else if (sender?.type === Role.Admin) {
+      newStatus = TicketStatus.RESOLVED;
+    } else {
+      newStatus = findTicket.status;
+    }
+
+    await this.prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        status: newStatus,
+      },
     });
 
     if (findTicket.user.type === Role.Admin && findTicket.user.phoneNumber) {
-      const recipientPhoneNumber = findTicket.user.phoneNumber;
       const smsText = `مدیر محترم، جناب آقای ${findTicket.user.fullName}
 پاسخی برای تیکت پشتیبانی شما توسط ادمین ثبت گردید.
 لطفاً جهت مشاهده پاسخ، وارد پنل کاربری خود شوید.`;
-
       try {
-        await this.smsService.sendMessageToUser(recipientPhoneNumber, smsText);
+        await this.smsService.sendMessageToUser(
+          findTicket.user.phoneNumber,
+          smsText,
+        );
       } catch (error) {
         console.error('خطا در ارسال پیامک', error);
       }

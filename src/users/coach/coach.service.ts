@@ -36,6 +36,8 @@ export class CoachService {
         fullName: true,
         nationalCode: true,
         phoneNumber: true,
+        birthDate: true,
+        age: true,
         history: true,
         certificates: true,
         image: true,
@@ -43,9 +45,10 @@ export class CoachService {
         type: true,
         sport: true,
         createdAt: true,
+        updatedAt: true,
       },
       orderBy: {
-        createdAt: 'asc',
+        createdAt: 'desc',
       },
     });
 
@@ -56,11 +59,67 @@ export class CoachService {
     };
   }
 
+  async getCoachProfile(coachId: number) {
+    const getCoach = await this.prismaService.users.findUnique({
+      where: { user_id: coachId },
+      select: {
+        user_id: true,
+        fullName: true,
+        nationalCode: true,
+        phoneNumber: true,
+        birthDate: true,
+        age: true,
+        history: true,
+        certificates: true,
+        image: true,
+        active: true,
+        type: true,
+        sport: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (getCoach?.type !== Role.Coach) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'مربی با این مشخصات یافت نشد',
+      });
+    }
+
+    if (!getCoach) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'مربی با این مشخصات یافت نشد',
+      });
+    }
+
+    return {
+      statusCode: 200,
+      message: 'مربی با موفقیت یافت شد',
+      data: getCoach,
+    };
+  }
+
   async getCoachById(coachId: number, masterId: number) {
     const getCoach = await this.prismaService.users.findUnique({
       where: { user_id: coachId },
-      include: {
+      select: {
+        user_id: true,
+        fullName: true,
+        nationalCode: true,
+        phoneNumber: true,
+        birthDate: true,
+        age: true,
+        history: true,
+        certificates: true,
+        image: true,
+        active: true,
+        type: true,
+        masterId: true,
         sport: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -69,6 +128,41 @@ export class CoachService {
       getCoach.masterId !== masterId ||
       getCoach.type !== Role.Coach
     ) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'مربی با این مشخصات یافت نشد',
+      });
+    }
+
+    return {
+      statusCode: 200,
+      message: 'مربی با موفقیت یافت شد',
+      data: getCoach,
+    };
+  }
+
+  async getById(coachId: number) {
+    const getCoach = await this.prismaService.users.findUnique({
+      where: { user_id: coachId },
+      select: {
+        user_id: true,
+        fullName: true,
+        nationalCode: true,
+        phoneNumber: true,
+        birthDate: true,
+        age: true,
+        history: true,
+        certificates: true,
+        image: true,
+        active: true,
+        type: true,
+        sport: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!getCoach || getCoach.type !== Role.Coach) {
       throw new NotFoundException({
         statusCode: 404,
         message: 'مربی با این مشخصات یافت نشد',
@@ -111,6 +205,8 @@ export class CoachService {
           fullName: dto.fullName,
           nationalCode: dto.nationalCode,
           phoneNumber: dto.phoneNumber,
+          birthDate: dto.birthDate,
+          age: dto.age,
           history: dto.history,
           certificates: dto.certificates,
           image: imageUrl,
@@ -123,6 +219,8 @@ export class CoachService {
           fullName: true,
           nationalCode: true,
           phoneNumber: true,
+          birthDate: true,
+          age: true,
           image: true,
           type: true,
           sport: true,
@@ -157,6 +255,54 @@ export class CoachService {
     }
   }
 
+  async updateCoachProfile(
+    coachId: number,
+    dto: UpdateCoachDto,
+    file?: Express.Multer.File,
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: UpdatedCoachData;
+  }> {
+    await this.getById(coachId);
+
+    let imageUrl: string | undefined = undefined;
+    if (file) {
+      imageUrl = `${process.env.APP_URL}uploads/coachs/${file.filename}`;
+    }
+
+    const updateCoach = await this.prismaService.users.update({
+      where: { user_id: coachId, type: Role.Coach },
+      data: {
+        fullName: dto.fullName,
+        nationalCode: dto.nationalCode,
+        phoneNumber: dto.phoneNumber,
+        birthDate: dto.birthDate,
+        age: dto.age,
+        history: dto.history,
+        certificates: dto.certificates,
+        image: imageUrl,
+      },
+      select: {
+        user_id: true,
+        fullName: true,
+        nationalCode: true,
+        phoneNumber: true,
+        birthDate: true,
+        age: true,
+        history: true,
+        certificates: true,
+        image: true,
+      },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'پروفایل با موفقیت بروزرسانی شد',
+      data: updateCoach,
+    };
+  }
+
   async updateCoach(
     coachId: number,
     masterId: number,
@@ -180,6 +326,8 @@ export class CoachService {
         fullName: dto.fullName,
         nationalCode: dto.nationalCode,
         phoneNumber: dto.phoneNumber,
+        birthDate: dto.birthDate,
+        age: dto.age,
         history: dto.history,
         certificates: dto.certificates,
         image: imageUrl,
@@ -189,6 +337,8 @@ export class CoachService {
         fullName: true,
         nationalCode: true,
         phoneNumber: true,
+        birthDate: true,
+        age: true,
         history: true,
         certificates: true,
         image: true,

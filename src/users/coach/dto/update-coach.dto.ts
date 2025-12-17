@@ -1,4 +1,5 @@
-import { IsOptional, IsString, Matches } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsDate, IsInt, IsOptional, IsString, Matches } from 'class-validator';
 
 export class UpdateCoachDto {
   @IsString()
@@ -13,6 +14,16 @@ export class UpdateCoachDto {
   @IsOptional()
   @Matches(/^09\d{9}$/, { message: 'فرمت شماره تلفن نامعتبر است' })
   phoneNumber?: string;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  birthDate?: Date;
+
+  @IsInt()
+  @Type(() => Number)
+  @IsOptional()
+  age?: number;
 
   @IsString()
   @IsOptional()

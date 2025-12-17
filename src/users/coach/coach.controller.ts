@@ -36,8 +36,15 @@ export class CoachController {
     return this.coachService.getAllCoach(req.user.userId);
   }
 
+  @Get('/profile')
+  @Roles(Role.Coach)
+  @HttpCode(HttpStatus.OK)
+  getCoachProfile(@Req() req) {
+    return this.coachService.getCoachProfile(req.user.userId);
+  }
+
   @Get('/:id')
-  @Roles(Role.Master, Role.Coach)
+  @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   getCoachById(@Req() req, @Param('id', ParseIntPipe) coachId: number) {
     return this.coachService.getCoachById(coachId, req.user.userId);
@@ -55,8 +62,24 @@ export class CoachController {
     return this.coachService.createCoach(req.user.userId, createCoachDto, file);
   }
 
+  @Put('/update/profile')
+  @Roles(Role.Coach)
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('imageFile'))
+  updateCoachProfile(
+    @Req() req,
+    @Body() updateCoachDto: UpdateCoachDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.coachService.updateCoachProfile(
+      req.user.userId,
+      updateCoachDto,
+      file,
+    );
+  }
+
   @Put('/:id')
-  @Roles(Role.Master, Role.Coach)
+  @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('imageFile'))
   updateCoach(

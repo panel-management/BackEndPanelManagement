@@ -33,21 +33,30 @@ export class GetStudentHistoryDto {
 }
 
 export class GetReportDto {
+  @IsOptional()
   @IsString()
   @IsEnum(['today', 'week', 'month'])
-  period: 'today' | 'week' | 'month';
+  period?: 'today' | 'week' | 'month';
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  limit?: number;
 }
 
 export class PaginationDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  @Min(1)
   page?: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  @Min(1)
   limit?: number;
 }

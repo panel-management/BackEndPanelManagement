@@ -40,7 +40,14 @@ export class StudentService {
     private readonly smsService: SmsServiceService,
   ) {}
 
-  async findAll(masterId: number) {
+  async findAll(masterId: number, page: number, limit: number) {
+    const total = await this.prismaService.users.count({
+      where: {
+        masterId: masterId,
+        type: Role.Student,
+      },
+    });
+
     const users = await this.prismaService.users.findMany({
       where: { masterId: masterId, type: Role.Student },
       select: {
@@ -63,9 +70,11 @@ export class StudentService {
       orderBy: {
         createdAt: 'desc',
       },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
-    const formattedUsers = users.map((user) => ({
+    const user = users.map((user) => ({
       ...user,
       studentTransactions: user.studentTransactions[0]?.status || null,
     }));
@@ -73,7 +82,34 @@ export class StudentService {
     return {
       statusCode: 200,
       message: 'هنرجو ها با موفقیت دریافت شد',
-      data: formattedUsers,
+      data: {
+        user,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    };
+  }
+
+  async getStudentForEquipment(masterId: number) {
+    const users = await this.prismaService.users.findMany({
+      where: { masterId: masterId, type: Role.Student },
+      select: {
+        user_id: true,
+        fullName: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'هنرجو ها با موفقیت دریافت شد',
+      data: users,
     };
   }
 
@@ -92,6 +128,7 @@ export class StudentService {
         diseaseRecords: true,
         underSupervisionDoctor: true,
         active: true,
+        assignedPlan: true,
         achievedBelts: true,
         currentBelt: true,
         sport: true,
@@ -431,25 +468,72 @@ export class StudentService {
     data: UpdatedStudentData;
   }> {
     await this.getById(studentId, masterId);
+
+    // داده‌های پایه برای آپدیت
+    const dataToUpdate: any = {
+      fullName: dto.fullName,
+      nationalCode: dto.nationalCode,
+      birthDate: dto.birthDate,
+      age: dto.age,
+      phoneNumber: dto.phoneNumber,
+      phoneNumberEmergency: dto.phoneNumberEmergency,
+      address: dto.address,
+      underSupervisionDoctor: dto.underSupervisionDoctor,
+      diseaseRecords: dto.diseaseRecords,
+      achievedBelts: {
+        connect: dto.beltIds?.map((id) => ({ id })),
+      },
+      currentBelt: dto.beltIds?.[0]
+        ? { connect: { id: dto.beltIds[0] } }
+        : undefined,
+    };
+
+    // اگر planId ارسال شده باشه، پلن رو هم آپدیت کن
+    if (dto.planId) {
+      const newPlan = await this.financialsService.findPlanById(dto.planId);
+      if (!newPlan || newPlan.masterId !== masterId) {
+        throw new NotFoundException({
+          statusCode: 404,
+          message: 'پلن جدید معتبر نیست یا متعلق به شما نیست',
+        });
+      }
+
+      const now = new Date();
+      const nextDueDate = new Date(now);
+      nextDueDate.setDate(nextDueDate.getDate() + newPlan.durationInDays);
+
+      dataToUpdate.assignedPlan = { connect: { id: dto.planId } };
+      dataToUpdate.planEndsAt = nextDueDate;
+      dataToUpdate.lastFeeGenerated = now;
+
+      // ایجاد transaction جدید برای پلن جدید
+      await this.prismaService.transaction.create({
+        data: {
+          type: TransactionType.FEE,
+          status: TransactionStatus.UNPAID,
+          amount: newPlan.price,
+          description: `شهریه اولیه برای پلن جدید ${newPlan.name}`,
+          dueDate: nextDueDate,
+          studentId: studentId,
+          creatorId: masterId,
+          planId: dto.planId,
+        },
+      });
+
+      // sms به student اگر پلن تغییر کرد
+      const student = await this.prismaService.users.findUnique({
+        where: { user_id: studentId },
+      });
+      if (student?.phoneNumber) {
+        const message = `هنرجوی عزیز ${student.fullName} سلام
+پلن شما به "${newPlan.name}" تغییر یافت. مهلت پرداخت جدید: ${nextDueDate.toLocaleDateString('fa-IR')}.`;
+        await this.smsService.sendMessageToUser(student.phoneNumber, message);
+      }
+    }
+
     const updateStudent = await this.prismaService.users.update({
       where: { user_id: studentId, type: Role.Student },
-      data: {
-        fullName: dto.fullName,
-        nationalCode: dto.nationalCode,
-        birthDate: dto.birthDate,
-        age: dto.age,
-        phoneNumber: dto.phoneNumber,
-        phoneNumberEmergency: dto.phoneNumberEmergency,
-        address: dto.address,
-        underSupervisionDoctor: dto.underSupervisionDoctor,
-        diseaseRecords: dto.diseaseRecords,
-        achievedBelts: {
-          connect: dto.beltIds?.map((id) => ({ id })),
-        },
-        currentBelt: dto.beltIds?.[0]
-          ? { connect: { id: dto.beltIds[0] } }
-          : undefined,
-      },
+      data: dataToUpdate,
       select: {
         user_id: true,
         fullName: true,
@@ -471,6 +555,58 @@ export class StudentService {
       data: updateStudent,
     };
   }
+
+  // // Update Student by Master
+  // async updateById(
+  //   studentId: number,
+  //   masterId: number,
+  //   dto: UpdateStudentDto,
+  // ): Promise<{
+  //   statusCode: number;
+  //   message: string;
+  //   data: UpdatedStudentData;
+  // }> {
+  //   await this.getById(studentId, masterId);
+  //   const updateStudent = await this.prismaService.users.update({
+  //     where: { user_id: studentId, type: Role.Student },
+  //     data: {
+  //       fullName: dto.fullName,
+  //       nationalCode: dto.nationalCode,
+  //       birthDate: dto.birthDate,
+  //       age: dto.age,
+  //       phoneNumber: dto.phoneNumber,
+  //       phoneNumberEmergency: dto.phoneNumberEmergency,
+  //       address: dto.address,
+  //       underSupervisionDoctor: dto.underSupervisionDoctor,
+  //       diseaseRecords: dto.diseaseRecords,
+  //       achievedBelts: {
+  //         connect: dto.beltIds?.map((id) => ({ id })),
+  //       },
+  //       currentBelt: dto.beltIds?.[0]
+  //         ? { connect: { id: dto.beltIds[0] } }
+  //         : undefined,
+  //     },
+  //     select: {
+  //       user_id: true,
+  //       fullName: true,
+  //       nationalCode: true,
+  //       birthDate: true,
+  //       age: true,
+  //       phoneNumber: true,
+  //       phoneNumberEmergency: true,
+  //       address: true,
+  //       underSupervisionDoctor: true,
+  //       diseaseRecords: true,
+  //       achievedBelts: true,
+  //       currentBelt: true,
+  //     },
+  //   });
+  //   return {
+  //     statusCode: 200,
+  //     message: 'پروفایل با موفقیت بروزرسانی شد',
+  //     data: updateStudent,
+  //   };
+  // }
 
   // Update Student by himself
   async updateStudentById(

@@ -164,6 +164,7 @@ export class AttendanceService {
 
     const total = await this.prisma.attendance.count({ where });
 
+    // لیست paginated برای report
     const report = await this.prisma.attendance.findMany({
       where,
       select: {
@@ -178,13 +179,23 @@ export class AttendanceService {
       take: limit,
     });
 
+    // لیست کامل (بدون pagination) برای summary و sessions - ثابت بماند
+    const fullReport = await this.prisma.attendance.findMany({
+      where,
+      select: {
+        status: true,
+        date: true,
+      },
+      orderBy: { date: 'desc' },
+    });
+
     const summary = { PRESENT: 0, ABSENT: 0, LATE: 0, EXCUSED: 0 };
-    for (const r of report) {
+    for (const r of fullReport) {
       if (r.status && summary.hasOwnProperty(r.status)) summary[r.status]++;
     }
 
     const sessionDates = Array.from(
-      new Set(report.map((r) => r.date.toISOString())),
+      new Set(fullReport.map((r) => r.date.toISOString())),
     );
 
     const sessions = {

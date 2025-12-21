@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
@@ -9,6 +10,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -28,8 +30,19 @@ export class StudentController {
   @Get()
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  getAllStudent(@Req() req) {
-    return this.studentService.findAll(req.user.userId);
+  getAllStudent(
+    @Req() req,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.studentService.findAll(req.user.userId, page, limit);
+  }
+
+  @Get('/equipment')
+  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
+  getStudentForEquipment(@Req() req) {
+    return this.studentService.getStudentForEquipment(req.user.userId);
   }
 
   // See You Profile Just yourself student

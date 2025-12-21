@@ -51,4 +51,9 @@ export class UpdateStudentDto {
   @IsInt({ each: true, message: 'هر شناسه کمربند باید یک عدد باشد' })
   @IsOptional()
   beltIds?: number[];
+
+  @IsInt()
+  @Type(() => Number)
+  @IsOptional()
+  planId?: number;
 }

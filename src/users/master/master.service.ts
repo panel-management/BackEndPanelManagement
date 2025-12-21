@@ -12,7 +12,6 @@ import { UpdateMasterDto } from './dto/update-master.dto';
 import {
   Active,
   MasterPlanType,
-  Prisma,
   SubscriptionPaymentStatus,
 } from '@prisma/client';
 import { join } from 'path';
@@ -34,27 +33,6 @@ type ChangedStatusCoach = {
   active: string;
 };
 
-type MasterWithAllDetails = Prisma.usersGetPayload<{
-  select: {
-    user_id: true;
-    fullName: true;
-    nationalCode: true;
-    phoneNumber: true;
-    history: true;
-    active: true;
-    type: true;
-    sport: true;
-    students: true;
-    subscriptionPayments: {
-      orderBy: {
-        createdAt: 'desc';
-      };
-    };
-    createdAt: true;
-    updatedAt: true;
-  };
-}> & { paymentStatus: SubscriptionPaymentStatus | 'NO_PAYMENT' };
-
 @Injectable()
 export class MasterService {
   constructor(
@@ -65,34 +43,6 @@ export class MasterService {
   ) {}
 
   async getAllMaster() {
-    // const getMaster = await this.prismaService.users.findMany({
-    //   where: { type: Role.Master },
-    //   select: {
-    //     user_id: true,
-    //     fullName: true,
-    //     nationalCode: true,
-    //     phoneNumber: true,
-    //     history: true,
-    //     image: true,
-    //     active: true,
-    //     type: true,
-    //     sport: true,
-    //     students: true,
-    //     subscriptionPayments: true,
-    //     createdAt: true,
-    //     updatedAt: true,
-    //   },
-    //   orderBy: {
-    //     createdAt: 'asc',
-    //   },
-    // });
-
-    // return {
-    //   statusCode: 200,
-    //   message: 'لیست استاد های باشگاه با موفقیت دریافت شد',
-    //   data: mastersWithStatus,
-    // };
-
     const masters = await this.prismaService.users.findMany({
       where: { type: Role.Master },
       select: {
@@ -104,21 +54,19 @@ export class MasterService {
         active: true,
         type: true,
         sport: true,
-        students: true,
         subscriptionPayments: {
-          orderBy: {
-            createdAt: 'desc',
-          },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { status: true },
         },
+        _count: { select: { students: true } },
         createdAt: true,
         updatedAt: true,
       },
-      orderBy: {
-        createdAt: 'asc',
-      },
+      orderBy: { createdAt: 'asc' },
     });
 
-    const mastersWithStatus: MasterWithAllDetails[] = masters.map((master) => {
+    const mastersWithStatus: any[] = masters.map((master) => {
       const latestPayment = master.subscriptionPayments[0];
       let status: SubscriptionPaymentStatus | 'NO_PAYMENT' = 'NO_PAYMENT';
 
@@ -127,8 +75,18 @@ export class MasterService {
       }
 
       return {
-        ...master,
+        user_id: master.user_id,
+        fullName: master.fullName,
+        nationalCode: master.nationalCode,
+        phoneNumber: master.phoneNumber,
+        history: master.history,
+        active: master.active,
+        type: master.type,
+        sport: master.sport,
+        studentCount: master._count.students,
         paymentStatus: status,
+        createdAt: master.createdAt,
+        updatedAt: master.updatedAt,
       };
     });
 

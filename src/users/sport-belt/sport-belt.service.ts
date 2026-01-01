@@ -7,8 +7,10 @@ export class SportBeltService {
 
   async getAllSport() {
     const getSport = await this.prismaService.sport.findMany({
-      include: {
-        users: true,
+      select: {
+        id: true,
+        name: true,
+        hasBeltSystem: true,
       },
     });
 
@@ -22,7 +24,11 @@ export class SportBeltService {
   async getSportById(id: number) {
     const getSport = await this.prismaService.sport.findUnique({
       where: { id: id },
-      include: { users: true },
+      select: {
+        id: true,
+        name: true,
+        hasBeltSystem: true,
+      },
     });
 
     if (!getSport || getSport.id !== id) {
@@ -41,9 +47,9 @@ export class SportBeltService {
 
   async getAllBelt() {
     const getBelt = await this.prismaService.belt.findMany({
-      include: {
-        achievedByUsers: true,
-        currentlyHeldByUsers: true,
+      select: {
+        id: true,
+        color: true,
       },
     });
 
@@ -57,9 +63,9 @@ export class SportBeltService {
   async getBeltById(id: number) {
     const getBelt = await this.prismaService.belt.findUnique({
       where: { id: id },
-      include: {
-        achievedByUsers: true,
-        currentlyHeldByUsers: true,
+      select: {
+        id: true,
+        color: true,
       },
     });
 

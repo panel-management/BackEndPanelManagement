@@ -21,6 +21,7 @@ export class CreateStudentDto {
 
   @IsInt()
   @IsNotEmpty({ message: 'سن نمیتواند خالی باشد' })
+  @Type(() => Number)
   age: number;
 
   @IsNotEmpty({ message: 'تاریخ تولد نمی تواند خلی باشد' })
@@ -50,11 +51,12 @@ export class CreateStudentDto {
   @IsOptional()
   diseaseRecords?: boolean;
 
-  @IsArray()
-  @IsInt({ each: true, message: 'هر شناسه کمربند باید یک عدد باشد' })
-  beltIds: number[];
+  @IsInt({ each: true, message: 'شناسه کمربند باید یک عدد باشد' })
+  @Type(() => Number)
+  @IsOptional()
+  beltIds?: number;
 
-  @IsInt()
+  @IsInt({ each: true, message: 'شناسه پلن باید یک عدد باشد' })
   @Type(() => Number)
   planId: number;
 }

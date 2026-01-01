@@ -1,6 +1,5 @@
 import { Type } from 'class-transformer';
 import {
-  IsArray,
   IsBoolean,
   IsDate,
   IsInt,
@@ -17,9 +16,9 @@ export class UpdateStudentDto {
   @IsOptional()
   nationalCode?: string;
 
-  @IsOptional()
   @IsDate()
   @Type(() => Date)
+  @IsOptional()
   birthDate?: Date;
 
   @IsInt()
@@ -47,12 +46,12 @@ export class UpdateStudentDto {
   @IsOptional()
   diseaseRecords?: boolean;
 
-  @IsArray()
-  @IsInt({ each: true, message: 'هر شناسه کمربند باید یک عدد باشد' })
+  @IsInt({ each: true, message: 'شناسه کمربند باید یک عدد باشد' })
+  @Type(() => Number)
   @IsOptional()
-  beltIds?: number[];
+  beltIds?: number;
 
-  @IsInt()
+  @IsInt({ each: true, message: 'شناسه پلن باید یک عدد باشد' })
   @Type(() => Number)
   @IsOptional()
   planId?: number;

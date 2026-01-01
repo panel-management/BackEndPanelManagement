@@ -327,11 +327,23 @@ export class StudentService {
         });
       }
 
-      if (masterSport.sport?.hasBeltSystem && !dto.beltIds?.length) {
+      if (masterSport.sport?.hasBeltSystem && !dto.beltIds) {
         throw new BadRequestException({
           statusCode: 400,
           message: `برای رشته ورزشی ${masterSport.sport.name} انتخاب کمربند الزامی است`,
         });
+      }
+
+      if (dto.beltIds) {
+        const belt = await this.prismaService.belt.findUnique({
+          where: { id: dto.beltIds },
+        });
+        if (!belt) {
+          throw new NotFoundException({
+            statusCode: 404,
+            message: 'کمربند با این ایدی یافت نشد',
+          });
+        }
       }
 
       if (!dto.planId) {
@@ -360,11 +372,17 @@ export class StudentService {
           address: dto.address,
           underSupervisionDoctor: dto.underSupervisionDoctor,
           diseaseRecords: dto.diseaseRecords,
-          achievedBelts: {
-            connect: dto.beltIds?.map((id) => ({ id })),
-          },
-          currentBelt: dto.beltIds?.[0]
-            ? { connect: { id: dto.beltIds[0] } }
+          // achievedBelts: {
+          //   connect: dto.beltIds?.map((id) => ({ id })),
+          // },
+          // currentBelt: dto.beltIds?.[0]
+          //   ? { connect: { id: dto.beltIds[0] } }
+          //   : undefined,
+          achievedBelts: dto.beltIds
+            ? { connect: [{ id: dto.beltIds }] }
+            : undefined,
+          currentBelt: dto.beltIds
+            ? { connect: { id: dto.beltIds } }
             : undefined,
           sport: { connect: { id: masterSport.sportId } },
           master: { connect: { user_id: masterId } },
@@ -480,12 +498,16 @@ export class StudentService {
       address: dto.address,
       underSupervisionDoctor: dto.underSupervisionDoctor,
       diseaseRecords: dto.diseaseRecords,
-      achievedBelts: {
-        connect: dto.beltIds?.map((id) => ({ id })),
-      },
-      currentBelt: dto.beltIds?.[0]
-        ? { connect: { id: dto.beltIds[0] } }
+      // achievedBelts: {
+      //   connect: dto.beltIds?.map((id) => ({ id })),
+      // },
+      // currentBelt: dto.beltIds?.[0]
+      //   ? { connect: { id: dto.beltIds[0] } }
+      //   : undefined,
+      achievedBelts: dto.beltIds
+        ? { connect: [{ id: dto.beltIds }] }
         : undefined,
+      currentBelt: dto.beltIds ? { connect: { id: dto.beltIds } } : undefined,
     };
 
     // اگر planId ارسال شده باشه، پلن رو هم آپدیت کن
@@ -630,12 +652,16 @@ export class StudentService {
         address: dto.address,
         underSupervisionDoctor: dto.underSupervisionDoctor,
         diseaseRecords: dto.diseaseRecords,
-        achievedBelts: {
-          connect: dto.beltIds?.map((id) => ({ id })),
-        },
-        currentBelt: dto.beltIds?.[0]
-          ? { connect: { id: dto.beltIds[0] } }
+        // achievedBelts: {
+        //   connect: dto.beltIds?.map((id) => ({ id })),
+        // },
+        // currentBelt: dto.beltIds?.[0]
+        //   ? { connect: { id: dto.beltIds[0] } }
+        //   : undefined,
+        achievedBelts: dto.beltIds
+          ? { connect: [{ id: dto.beltIds }] }
           : undefined,
+        currentBelt: dto.beltIds ? { connect: { id: dto.beltIds } } : undefined,
       },
       select: {
         user_id: true,

@@ -22,7 +22,7 @@ export class UserService {
         user_id: true,
         type: true,
         fullName: true,
-        phoneNumber: true,
+        sport: { select: { hasBeltSystem: true } },
       },
     });
 
@@ -32,6 +32,7 @@ export class UserService {
         message: 'کاربر یافت نشد',
       });
     }
+
     return {
       statusCode: 200,
       message: 'پروفایل با موفقیت دریافت شد',

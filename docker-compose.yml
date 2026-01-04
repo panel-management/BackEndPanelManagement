@@ -1,16 +1,36 @@
 services:
+  # development
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: dev:latest
+    container_name: club_panel_dev
+    ports:
+      - "8000:3000"
+    volumes:
+      - ./src:/usr/src/app/src
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+    profiles:
+      - dev
+  # production
   app-prod:
     build:
       context: .
       dockerfile: Dockerfile.prod
     image: prod:latest
     container_name: club_panel_prod
+    expose:
+      - "3000"
     env_file:
       - .env
     environment:
       - NODE_ENV=production
-    expose:
-      - "3000"
+    profiles:
+      - prod
     networks:
       - app_net
 
@@ -25,6 +45,8 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - app-prod
+    profiles:
+      - prod
     networks:
       - app_net
 

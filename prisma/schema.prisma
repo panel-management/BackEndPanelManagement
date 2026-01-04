@@ -153,10 +153,12 @@ model users {
 }
 
 model Belt {
-  id                   Int     @id @unique @default(autoincrement())
-  color                String  @unique
-  achievedByUsers      users[] @relation("UserAchievedBelts")
-  currentlyHeldByUsers users[] @relation("UserCurrentBelt")
+  id                   Int      @id @unique @default(autoincrement())
+  color                String   @unique
+  achievedByUsers      users[]  @relation("UserAchievedBelts")
+  currentlyHeldByUsers users[]  @relation("UserCurrentBelt")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model Sport {
@@ -274,7 +276,7 @@ model SubscriptionPayment {
 // model ticket
 
 model Ticket {
-  id    Int    @id @unique @default(autoincrement())
+  id    BigInt @id @unique @default(autoincrement())
   title String
 
   category TicketCategory @default(GENERAL)
@@ -291,11 +293,11 @@ model Ticket {
 }
 
 model TicketMessage {
-  id        Int      @id @unique @default(autoincrement())
+  id        BigInt   @id @unique @default(autoincrement())
   text      String   @db.Text
   createdAt DateTime @default(now())
 
-  ticketId Int
+  ticketId BigInt
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   senderId Int

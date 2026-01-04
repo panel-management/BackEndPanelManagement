@@ -27,9 +27,6 @@ FROM node:20-alpine3.20 AS production
 # set the worker directory inside the container
 WORKDIR /usr/src/app
 
-# copy file package.json
-COPY package*.json ./
-
 RUN npm install -g pm2
 
 # copy file dist and prisma
@@ -37,15 +34,8 @@ COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/prisma ./prisma
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 
-# generate file prisma
-RUN npx prisma generate
-
 # remove folder src
 RUN rm -rf ./src
 
-# running script entrypoint
-COPY entrypoint.sh ./
-RUN chmod +x entrypoint.sh
-
 # running the app and generate database
-ENTRYPOINT ["./entrypoint.sh"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && ./node_modules/.bin/prisma db seed && pm2-runtime dist/src/main.js -i max"]

@@ -309,10 +309,11 @@ export class MasterService {
 
   // select plan himself master
   async selectPlanHimSelf(masterId: number, planId: number) {
+    const assignResult = await this.assignPlanToMaster(masterId, planId);
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'پلن انتخاب شده با موفقیت ثبت شد',
-      data: await this.assignPlanToMaster(masterId, planId),
+      data: assignResult.data,
     };
   }
 

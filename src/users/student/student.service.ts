@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import {
@@ -16,7 +10,8 @@ import {
 import { Role } from 'src/auth/enums/role.enum';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { FinancialsService } from 'src/financials/financials.service';
-import { SmsServiceService } from 'src/sms-service/sms-service.service';
+import { SmsService } from 'src/sms/sms.service';
+import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
 
 type UpdatedStudentData = {
   fullName: string | null;
@@ -35,44 +30,50 @@ type UpdatedStudentData = {
 @Injectable()
 export class StudentService {
   constructor(
-    private readonly prismaService: PrismaService,
+    private readonly prisma: PrismaService,
     private readonly financialsService: FinancialsService,
-    private readonly smsService: SmsServiceService,
+    private readonly smsService: SmsService,
   ) {}
 
-  async findAll(masterId: number, page: number, limit: number) {
-    const total = await this.prismaService.users.count({
-      where: {
-        masterId: masterId,
-        type: Role.Student,
-      },
-    });
+  // get all students for master with pagination
+  async findAll(masterId: number, pageQueryDto: PaginationQueryDto) {
+    const { page, limit } = pageQueryDto;
+    const skip = page && limit ? (page - 1) * limit : undefined;
+    const take = limit ? limit : undefined;
 
-    const users = await this.prismaService.users.findMany({
-      where: { masterId: masterId, type: Role.Student },
-      select: {
-        user_id: true,
-        fullName: true,
-        phoneNumber: true,
-        active: true,
-        currentBelt: true,
-        achievedBelts: true,
-        sport: true,
-        studentTransactions: {
-          where: { type: TransactionType.FEE },
-          orderBy: { paymentDate: 'desc' },
-          take: 1,
-          select: { status: true },
+    const where = {
+      masterId: masterId,
+      type: Role.Student,
+    };
+
+    const [users, total] = await this.prisma.$transaction([
+      this.prisma.users.findMany({
+        where,
+        select: {
+          user_id: true,
+          fullName: true,
+          phoneNumber: true,
+          isActive: true,
+          currentBelt: true,
+          achievedBelts: true,
+          sport: true,
+          studentTransactions: {
+            where: { type: TransactionType.FEE },
+            orderBy: { paymentDate: 'desc' },
+            take: 1,
+            select: { status: true },
+          },
+          createdAt: true,
+          updatedAt: true,
         },
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take,
+      }),
+      this.prisma.users.count({ where }),
+    ]);
 
     const user = users.map((user) => ({
       ...user,
@@ -80,43 +81,24 @@ export class StudentService {
     }));
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'هنرجو ها با موفقیت دریافت شد',
       data: {
         user,
         pagination: {
+          page: page || 1,
+          limit: limit || total,
           total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit),
+          totalPages: limit ? Math.ceil(total / limit) : 1,
         },
       },
     };
   }
 
-  async getStudentForEquipment(masterId: number) {
-    const users = await this.prismaService.users.findMany({
-      where: { masterId: masterId, type: Role.Student },
-      select: {
-        user_id: true,
-        fullName: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    return {
-      statusCode: 200,
-      message: 'هنرجو ها با موفقیت دریافت شد',
-      data: users,
-    };
-  }
-
   // get student by id for master
   async getById(studentId: number, masterId: number) {
-    const student = await this.prismaService.users.findUnique({
-      where: { user_id: studentId },
+    const student = await this.prisma.users.findUnique({
+      where: { user_id: studentId, type: Role.Student },
       select: {
         fullName: true,
         phoneNumber: true,
@@ -127,7 +109,7 @@ export class StudentService {
         birthDate: true,
         diseaseRecords: true,
         underSupervisionDoctor: true,
-        active: true,
+        isActive: true,
         assignedPlan: true,
         achievedBelts: true,
         currentBelt: true,
@@ -144,21 +126,21 @@ export class StudentService {
     });
 
     if (student?.type !== Role.Student) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'هنرجویی با این مشخاصت یافت نشد',
-      });
+      throw new HttpException(
+        'هنرجویی با این مشخاصت یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     if (!student || student.masterId !== masterId) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'هنرجویی با این مشخاصت یافت نشد',
-      });
+      throw new HttpException(
+        'هنرجویی با این مشخاصت یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'هنرجو با موفقیت دریافت شد',
       data: student,
     };
@@ -166,8 +148,8 @@ export class StudentService {
 
   // get student by id for student himself
   async getStudentById(studentId: number) {
-    const student = await this.prismaService.users.findUnique({
-      where: { user_id: studentId },
+    const student = await this.prisma.users.findUnique({
+      where: { user_id: studentId, type: Role.Student },
       select: {
         fullName: true,
         phoneNumber: true,
@@ -178,7 +160,7 @@ export class StudentService {
         birthDate: true,
         diseaseRecords: true,
         underSupervisionDoctor: true,
-        active: true,
+        isActive: true,
         achievedBelts: true,
         currentBelt: true,
         sport: true,
@@ -189,269 +171,162 @@ export class StudentService {
     });
 
     if (student?.type !== Role.Student) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'هنرجویی با این مشخاصت یافت نشد',
-      });
+      throw new HttpException(
+        'هنرجویی با این مشخاصت یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     if (!student) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'هنرجویی با این مشخاصت یافت نشد',
-      });
+      throw new HttpException(
+        'هنرجویی با این مشخاصت یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'هنرجو با موفقیت دریافت شد',
       data: student,
     };
   }
 
-  // async createStudent(masterId: number, dto: CreateStudentDto) {
-  //   try {
-  //     const masterSport = await this.prismaService.users.findUnique({
-  //       where: { user_id: masterId },
-  //       include: { sport: true },
-  //     });
-  //     if (!masterSport || !masterSport.sportId) {
-  //       throw new ForbiddenException({
-  //         statusCode: 403,
-  //         message: 'شما به عنوان مربی باید ابتدا رشته ورزشی خود را مشخص کنید',
-  //       });
-  //     }
-  //     if (masterSport.sport?.hasBeltSystem && !dto.beltIds) {
-  //       throw new BadRequestException({
-  //         statusCode: 400,
-  //         message: `برای رشته ورزشی ${masterSport.sport.name} انتخاب کمربند الزامی است`,
-  //       });
-  //     }
-  //     if (!dto.planId) {
-  //       throw new BadRequestException({
-  //         statusCode: 400,
-  //         message: 'انتخاب پلن برای هنرجو الزامی است',
-  //       });
-  //     }
-  //     const planExists = await this.financialsService.findPlanById(dto.planId);
-  //     if (!planExists || planExists.masterId !== masterId) {
-  //       throw new NotFoundException({
-  //         statusCode: 404,
-  //         message: 'پلن شهریه انتخاب شده معتبر نیست یا متعلق به شما نمی‌ باشد',
-  //       });
-  //     }
-  //     const newUser = await this.prismaService.users.create({
-  //       data: {
-  //         fullName: dto.fullName,
-  //         nationalCode: dto.nationalCode,
-  //         age: dto.age,
-  //         birthDate: dto.birthDate,
-  //         phoneNumber: dto.phoneNumber,
-  //         phoneNumberEmergency: dto.phoneNumberEmergency,
-  //         address: dto.address,
-  //         underSupervisionDoctor: dto.underSupervisionDoctor,
-  //         diseaseRecords: dto.diseaseRecords,
-  //         assignedPlan: dto.planId
-  //           ? { connect: { id: dto.planId } }
-  //           : undefined,
-  //         achievedBelts: {
-  //           connect: dto.beltIds?.map((id) => ({ id })),
-  //         },
-  //         currentBelt: dto.beltIds?.[0]
-  //           ? { connect: { id: dto.beltIds[0] } }
-  //           : undefined,
-  //         sport: {
-  //           connect: { id: masterSport.sportId },
-  //         },
-  //         master: { connect: { user_id: masterId } },
-  //         type: Role.Student,
-  //       },
-  //       select: {
-  //         user_id: true,
-  //         fullName: true,
-  //         nationalCode: true,
-  //         age: true,
-  //         birthDate: true,
-  //         phoneNumber: true,
-  //         phoneNumberEmergency: true,
-  //         address: true,
-  //         underSupervisionDoctor: true,
-  //         diseaseRecords: true,
-  //         achievedBelts: true,
-  //         currentBelt: true,
-  //         type: true,
-  //         assignedPlan: true,
-  //         sport: true,
-  //         createdAt: true,
-  //       },
-  //     });
-  //     return {
-  //       statusCode: 201,
-  //       message: 'هنرجو با موفقیت ایجاد شد',
-  //       data: newUser,
-  //     };
-  //   } catch (error) {
-  //     if (
-  //       error instanceof Prisma.PrismaClientKnownRequestError &&
-  //       error.code === 'P2002'
-  //     ) {
-  //       const target = error.meta?.target as string[];
-  //       if (target?.includes('phoneNumber')) {
-  //         throw new ConflictException({
-  //           statusCode: 409,
-  //           message: 'کاربری با این شماره تلفن از قبل وجود دارد',
-  //         });
-  //       }
-  //       if (target?.includes('nationalCode')) {
-  //         throw new ConflictException({
-  //           statusCode: 409,
-  //           message: 'کاربری با این کد ملی از قبل وجود دارد',
-  //         });
-  //       }
-  //     }
-  //     throw error;
-  //   }
-  // }
-
-  // Create Student
+  // create student
   async createStudent(masterId: number, dto: CreateStudentDto) {
+    const masterSport = await this.prisma.users.findUnique({
+      where: { user_id: masterId, type: Role.Master },
+      include: { sport: true },
+    });
+
+    if (!masterSport || !masterSport.sportId) {
+      throw new HttpException(
+        'شما به عنوان مربی باید ابتدا رشته ورزشی خود را مشخص کنید',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    if (masterSport.sport?.hasBeltSystem && !dto.beltIds) {
+      throw new HttpException(
+        `برای رشته ورزشی ${masterSport.sport.name} انتخاب کمربند الزامی است`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (dto.beltIds) {
+      const belt = await this.prisma.belt.findUnique({
+        where: { id: dto.beltIds },
+      });
+      if (!belt) {
+        throw new HttpException(
+          'کمربند با این ایدی یافت نشد',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+    }
+
+    if (!dto.planId) {
+      throw new HttpException(
+        'انتخاب پلن برای هنرجو الزامی است',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const planExists = await this.financialsService.findPlanById(dto.planId);
+    if (!planExists || planExists.masterId !== masterId) {
+      throw new HttpException(
+        'پلن شهریه انتخاب شده معتبر نیست یا متعلق به شما نمی‌ باشد',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const sportId = masterSport.sportId;
+
     try {
-      const masterSport = await this.prismaService.users.findUnique({
-        where: { user_id: masterId },
-        include: { sport: true },
-      });
-      if (!masterSport || !masterSport.sportId) {
-        throw new ForbiddenException({
-          statusCode: 403,
-          message: 'شما به عنوان مربی باید ابتدا رشته ورزشی خود را مشخص کنید',
+      return await this.prisma.$transaction(async (tx) => {
+        const newUser = await tx.users.create({
+          data: {
+            fullName: dto.fullName,
+            nationalCode: dto.nationalCode,
+            age: dto.age,
+            birthDate: dto.birthDate,
+            phoneNumber: dto.phoneNumber,
+            phoneNumberEmergency: dto.phoneNumberEmergency,
+            address: dto.address,
+            underSupervisionDoctor: dto.underSupervisionDoctor,
+            diseaseRecords: dto.diseaseRecords,
+            achievedBelts: dto.beltIds
+              ? { connect: [{ id: dto.beltIds }] }
+              : undefined,
+            currentBelt: dto.beltIds
+              ? { connect: { id: dto.beltIds } }
+              : undefined,
+            sport: { connect: { id: sportId } },
+            master: { connect: { user_id: masterId } },
+            lastFeeGenerated: new Date(),
+            type: Role.Student,
+          },
+          select: {
+            user_id: true,
+            fullName: true,
+            nationalCode: true,
+            age: true,
+            birthDate: true,
+            phoneNumber: true,
+            phoneNumberEmergency: true,
+            address: true,
+            underSupervisionDoctor: true,
+            diseaseRecords: true,
+            achievedBelts: true,
+            currentBelt: true,
+            type: true,
+            sport: true,
+            createdAt: true,
+          },
         });
-      }
 
-      if (masterSport.sport?.hasBeltSystem && !dto.beltIds) {
-        throw new BadRequestException({
-          statusCode: 400,
-          message: `برای رشته ورزشی ${masterSport.sport.name} انتخاب کمربند الزامی است`,
-        });
-      }
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + planExists.durationInDays);
 
-      if (dto.beltIds) {
-        const belt = await this.prismaService.belt.findUnique({
-          where: { id: dto.beltIds },
+        const transaction = await tx.transaction.create({
+          data: {
+            type: TransactionType.FEE,
+            status: TransactionStatus.PENDING,
+            amount: planExists.price,
+            description: `شهریه اولیه برای پلن ${planExists.name}`,
+            dueDate: dueDate,
+            studentId: newUser.user_id,
+            creatorId: masterId,
+            planId: dto.planId,
+          },
         });
-        if (!belt) {
-          throw new NotFoundException({
-            statusCode: 404,
-            message: 'کمربند با این ایدی یافت نشد',
+
+        if (newUser.phoneNumber) {
+          const formattedAmount = Number(transaction.amount).toLocaleString(
+            'fa-IR',
+          );
+          const formattedDueDate = dueDate.toLocaleDateString('fa-IR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
           });
-        }
-      }
 
-      if (!dto.planId) {
-        throw new BadRequestException({
-          statusCode: 400,
-          message: 'انتخاب پلن برای هنرجو الزامی است',
-        });
-      }
-
-      const planExists = await this.financialsService.findPlanById(dto.planId);
-      if (!planExists || planExists.masterId !== masterId) {
-        throw new NotFoundException({
-          statusCode: 404,
-          message: 'پلن شهریه انتخاب شده معتبر نیست یا متعلق به شما نمی‌باشد',
-        });
-      }
-
-      const newUser = await this.prismaService.users.create({
-        data: {
-          fullName: dto.fullName,
-          nationalCode: dto.nationalCode,
-          age: dto.age,
-          birthDate: dto.birthDate,
-          phoneNumber: dto.phoneNumber,
-          phoneNumberEmergency: dto.phoneNumberEmergency,
-          address: dto.address,
-          underSupervisionDoctor: dto.underSupervisionDoctor,
-          diseaseRecords: dto.diseaseRecords,
-          // achievedBelts: {
-          //   connect: dto.beltIds?.map((id) => ({ id })),
-          // },
-          // currentBelt: dto.beltIds?.[0]
-          //   ? { connect: { id: dto.beltIds[0] } }
-          //   : undefined,
-          achievedBelts: dto.beltIds
-            ? { connect: [{ id: dto.beltIds }] }
-            : undefined,
-          currentBelt: dto.beltIds
-            ? { connect: { id: dto.beltIds } }
-            : undefined,
-          sport: { connect: { id: masterSport.sportId } },
-          master: { connect: { user_id: masterId } },
-          lastFeeGenerated: new Date(),
-          type: Role.Student,
-        },
-        select: {
-          user_id: true,
-          fullName: true,
-          nationalCode: true,
-          age: true,
-          birthDate: true,
-          phoneNumber: true,
-          phoneNumberEmergency: true,
-          address: true,
-          underSupervisionDoctor: true,
-          diseaseRecords: true,
-          achievedBelts: true,
-          currentBelt: true,
-          type: true,
-          sport: true,
-          createdAt: true,
-        },
-      });
-
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + planExists.durationInDays);
-
-      const transaction = await this.prismaService.transaction.create({
-        data: {
-          type: TransactionType.FEE,
-          status: TransactionStatus.UNPAID,
-          amount: planExists.price,
-          description: `شهریه اولیه برای پلن ${planExists.name}`,
-          dueDate: dueDate,
-          studentId: newUser.user_id,
-          creatorId: masterId,
-          planId: dto.planId,
-        },
-      });
-
-      if (newUser.phoneNumber) {
-        const formattedAmount = transaction.amount
-          .toNumber()
-          .toLocaleString('fa-IR');
-        const formattedDueDate = dueDate.toLocaleDateString('fa-IR', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-        const message = `سلام ${newUser.fullName} عزیز
+          this.smsService.sendMessageToUser(
+            newUser.phoneNumber,
+            `سلام ${newUser.fullName} عزیز
 به باشگاه خوش آمدید!
 پلن انتخابی:${planExists.name}
 شهریه اولیه:${formattedAmount} تومان
 مهلت پرداخت:${formattedDueDate}
-پس از پرداخت و تایید، پلن فعال می‌شود.`;
-
-        try {
-          await this.smsService.sendMessageToUser(newUser.phoneNumber, message);
-        } catch (error) {
-          console.error(`ارسال پیامک ناموفق:`, error);
+پس از پرداخت و تایید، پلن فعال می‌شود.`,
+          );
         }
-      }
 
-      return {
-        statusCode: 201,
-        message: 'هنرجو ایجاد شد و تراکنش شهریه اولیه ثبت گردید',
-        data: { ...newUser, transaction },
-      };
+        return {
+          statusCode: HttpStatus.CREATED,
+          message: 'هنرجو ایجاد شد و تراکنش شهریه اولیه ثبت گردید',
+          data: { ...newUser, transaction },
+        };
+      });
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -459,23 +334,17 @@ export class StudentService {
       ) {
         const target = error.meta?.target as string[];
         if (target?.includes('phoneNumber')) {
-          throw new ConflictException({
-            statusCode: 409,
-            message: 'شماره تلفن تکراری است',
-          });
+          throw new HttpException('شماره تلفن تکراری است', HttpStatus.CONFLICT);
         }
         if (target?.includes('nationalCode')) {
-          throw new ConflictException({
-            statusCode: 409,
-            message: 'کد ملی تکراری است',
-          });
+          throw new HttpException('کد ملی تکراری است', HttpStatus.CONFLICT);
         }
       }
       throw error;
     }
   }
 
-  // Update Student by Master
+  // update student by master
   async updateById(
     studentId: number,
     masterId: number,
@@ -487,7 +356,6 @@ export class StudentService {
   }> {
     await this.getById(studentId, masterId);
 
-    // داده‌های پایه برای آپدیت
     const dataToUpdate: any = {
       fullName: dto.fullName,
       nationalCode: dto.nationalCode,
@@ -498,139 +366,112 @@ export class StudentService {
       address: dto.address,
       underSupervisionDoctor: dto.underSupervisionDoctor,
       diseaseRecords: dto.diseaseRecords,
-      // achievedBelts: {
-      //   connect: dto.beltIds?.map((id) => ({ id })),
-      // },
-      // currentBelt: dto.beltIds?.[0]
-      //   ? { connect: { id: dto.beltIds[0] } }
-      //   : undefined,
       achievedBelts: dto.beltIds
         ? { connect: [{ id: dto.beltIds }] }
         : undefined,
       currentBelt: dto.beltIds ? { connect: { id: dto.beltIds } } : undefined,
     };
 
-    // اگر planId ارسال شده باشه، پلن رو هم آپدیت کن
+    let newPlan: any = null;
+    let nextDueDate: Date | null = null;
+
     if (dto.planId) {
-      const newPlan = await this.financialsService.findPlanById(dto.planId);
+      newPlan = await this.financialsService.findPlanById(dto.planId);
       if (!newPlan || newPlan.masterId !== masterId) {
-        throw new NotFoundException({
-          statusCode: 404,
-          message: 'پلن جدید معتبر نیست یا متعلق به شما نیست',
-        });
+        throw new HttpException(
+          'پلن جدید معتبر نیست یا متعلق به شما نیست',
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       const now = new Date();
-      const nextDueDate = new Date(now);
+      nextDueDate = new Date(now);
       nextDueDate.setDate(nextDueDate.getDate() + newPlan.durationInDays);
 
       dataToUpdate.assignedPlan = { connect: { id: dto.planId } };
       dataToUpdate.planEndsAt = nextDueDate;
       dataToUpdate.lastFeeGenerated = now;
-
-      // ایجاد transaction جدید برای پلن جدید
-      await this.prismaService.transaction.create({
-        data: {
-          type: TransactionType.FEE,
-          status: TransactionStatus.UNPAID,
-          amount: newPlan.price,
-          description: `شهریه اولیه برای پلن جدید ${newPlan.name}`,
-          dueDate: nextDueDate,
-          studentId: studentId,
-          creatorId: masterId,
-          planId: dto.planId,
-        },
-      });
-
-      // sms به student اگر پلن تغییر کرد
-      const student = await this.prismaService.users.findUnique({
-        where: { user_id: studentId },
-      });
-      if (student?.phoneNumber) {
-        const message = `هنرجوی عزیز ${student.fullName} سلام
-پلن شما به "${newPlan.name}" تغییر یافت. مهلت پرداخت جدید: ${nextDueDate.toLocaleDateString('fa-IR')}.`;
-        await this.smsService.sendMessageToUser(student.phoneNumber, message);
-      }
     }
 
-    const updateStudent = await this.prismaService.users.update({
-      where: { user_id: studentId, type: Role.Student },
-      data: dataToUpdate,
-      select: {
-        user_id: true,
-        fullName: true,
-        nationalCode: true,
-        birthDate: true,
-        age: true,
-        phoneNumber: true,
-        phoneNumberEmergency: true,
-        address: true,
-        underSupervisionDoctor: true,
-        diseaseRecords: true,
-        achievedBelts: true,
-        currentBelt: true,
-      },
-    });
-    return {
-      statusCode: 200,
-      message: 'پروفایل با موفقیت بروزرسانی شد',
-      data: updateStudent,
-    };
+    try {
+      const updatedStudent = await this.prisma.$transaction(async (tx) => {
+        if (dto.planId) {
+          // await tx.transaction.updateMany({
+          //   where: {
+          //     studentId,
+          //     type: TransactionType.FEE,
+          //     status: TransactionStatus.PENDING,
+          //   },
+          //   data: {
+          //     status: TransactionStatus.UNPAID,
+          //   },
+          // });
+
+          await tx.transaction.create({
+            data: {
+              type: TransactionType.FEE,
+              status: TransactionStatus.PENDING,
+              amount: newPlan.price,
+              description: `شهریه اولیه برای پلن جدید ${newPlan.name}`,
+              dueDate: nextDueDate!,
+              studentId,
+              creatorId: masterId,
+              planId: dto.planId,
+            },
+          });
+        }
+
+        return await tx.users.update({
+          where: { user_id: studentId, type: Role.Student },
+          data: dataToUpdate,
+          select: {
+            user_id: true,
+            fullName: true,
+            nationalCode: true,
+            birthDate: true,
+            age: true,
+            phoneNumber: true,
+            phoneNumberEmergency: true,
+            address: true,
+            underSupervisionDoctor: true,
+            diseaseRecords: true,
+            achievedBelts: true,
+            currentBelt: true,
+          },
+        });
+      });
+
+      if (dto.planId && updatedStudent.phoneNumber) {
+        this.smsService.sendMessageToUser(
+          updatedStudent.phoneNumber,
+          `هنرجوی عزیز ${updatedStudent.fullName} سلام
+  پلن شما به "${newPlan.name}" تغییر یافت. مهلت پرداخت جدید: ${nextDueDate?.toLocaleDateString('fa-IR')}.`,
+        );
+      }
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'پروفایل با موفقیت بروزرسانی شد',
+        data: updatedStudent,
+      };
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const target = error.meta?.target as string[];
+        if (target?.includes('phoneNumber')) {
+          throw new HttpException('شماره تلفن تکراری است', HttpStatus.CONFLICT);
+        }
+        if (target?.includes('nationalCode')) {
+          throw new HttpException('کد ملی تکراری است', HttpStatus.CONFLICT);
+        }
+      }
+      throw error;
+    }
   }
 
-  // // Update Student by Master
-  // async updateById(
-  //   studentId: number,
-  //   masterId: number,
-  //   dto: UpdateStudentDto,
-  // ): Promise<{
-  //   statusCode: number;
-  //   message: string;
-  //   data: UpdatedStudentData;
-  // }> {
-  //   await this.getById(studentId, masterId);
-  //   const updateStudent = await this.prismaService.users.update({
-  //     where: { user_id: studentId, type: Role.Student },
-  //     data: {
-  //       fullName: dto.fullName,
-  //       nationalCode: dto.nationalCode,
-  //       birthDate: dto.birthDate,
-  //       age: dto.age,
-  //       phoneNumber: dto.phoneNumber,
-  //       phoneNumberEmergency: dto.phoneNumberEmergency,
-  //       address: dto.address,
-  //       underSupervisionDoctor: dto.underSupervisionDoctor,
-  //       diseaseRecords: dto.diseaseRecords,
-  //       achievedBelts: {
-  //         connect: dto.beltIds?.map((id) => ({ id })),
-  //       },
-  //       currentBelt: dto.beltIds?.[0]
-  //         ? { connect: { id: dto.beltIds[0] } }
-  //         : undefined,
-  //     },
-  //     select: {
-  //       user_id: true,
-  //       fullName: true,
-  //       nationalCode: true,
-  //       birthDate: true,
-  //       age: true,
-  //       phoneNumber: true,
-  //       phoneNumberEmergency: true,
-  //       address: true,
-  //       underSupervisionDoctor: true,
-  //       diseaseRecords: true,
-  //       achievedBelts: true,
-  //       currentBelt: true,
-  //     },
-  //   });
-  //   return {
-  //     statusCode: 200,
-  //     message: 'پروفایل با موفقیت بروزرسانی شد',
-  //     data: updateStudent,
-  //   };
-  // }
-
-  // Update Student by himself
+  // update student by himself
   async updateStudentById(
     studentId: number,
     dto: UpdateStudentDto,
@@ -640,7 +481,8 @@ export class StudentService {
     data: UpdatedStudentData;
   }> {
     await this.getStudentById(studentId);
-    const updateStudent = await this.prismaService.users.update({
+
+    const updateStudent = await this.prisma.users.update({
       where: { user_id: studentId, type: Role.Student },
       data: {
         fullName: dto.fullName,
@@ -652,12 +494,6 @@ export class StudentService {
         address: dto.address,
         underSupervisionDoctor: dto.underSupervisionDoctor,
         diseaseRecords: dto.diseaseRecords,
-        // achievedBelts: {
-        //   connect: dto.beltIds?.map((id) => ({ id })),
-        // },
-        // currentBelt: dto.beltIds?.[0]
-        //   ? { connect: { id: dto.beltIds[0] } }
-        //   : undefined,
         achievedBelts: dto.beltIds
           ? { connect: [{ id: dto.beltIds }] }
           : undefined,
@@ -678,24 +514,25 @@ export class StudentService {
         currentBelt: true,
       },
     });
+
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'پروفایل با موفقیت بروزرسانی شد',
       data: updateStudent,
     };
   }
 
-  //  Delete Student
+  //  delete stduent
   async deleteStudentById(
     studentId: number,
     masterId: number,
   ): Promise<{ statusCode: number; message: string }> {
     await this.getById(studentId, masterId);
 
-    await this.prismaService.users.delete({
+    await this.prisma.users.delete({
       where: { user_id: studentId, type: Role.Student },
     });
 
-    return { statusCode: 200, message: 'هنرجو با موفقیت حذف شد' };
+    return { statusCode: HttpStatus.OK, message: 'هنرجو با موفقیت حذف شد' };
   }
 }

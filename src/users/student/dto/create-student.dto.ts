@@ -6,21 +6,20 @@ import {
   IsOptional,
   IsInt,
   IsBoolean,
-  IsArray,
   IsDate,
 } from 'class-validator';
 
 export class CreateStudentDto {
   @IsString()
-  @IsNotEmpty({ message: 'نام کامل نمی‌تواند خالی باشد' })
+  @IsNotEmpty({ message: 'نام کامل نم ی‌تواند خالی باشد' })
   fullName: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'کد ملی نمی‌تواند خالی باشد' })
+  @IsNotEmpty({ message: 'کد ملی نمی‌ تواند خالی باشد' })
   nationalCode: string;
 
   @IsInt()
-  @IsNotEmpty({ message: 'سن نمیتواند خالی باشد' })
+  @IsNotEmpty({ message: 'سن نمی تواند خالی باشد' })
   @Type(() => Number)
   age: number;
 
@@ -30,7 +29,7 @@ export class CreateStudentDto {
   birthDate: Date;
 
   @IsString()
-  @IsNotEmpty({ message: 'شماره تلفن نمی‌تواند خالی باشد' })
+  @IsNotEmpty({ message: 'شماره تلفن نمی‌ تواند خالی باشد' })
   @Matches(/^09\d{9}$/, { message: 'فرمت شماره تلفن نامعتبر است' })
   phoneNumber: string;
 
@@ -52,11 +51,12 @@ export class CreateStudentDto {
   diseaseRecords?: boolean;
 
   @IsInt({ each: true, message: 'شناسه کمربند باید یک عدد باشد' })
-  @Type(() => Number)
   @IsOptional()
+  @Type(() => Number)
   beltIds?: number;
 
   @IsInt({ each: true, message: 'شناسه پلن باید یک عدد باشد' })
+  @IsNotEmpty({ message: 'نمی تواند پلن خالی باشد' })
   @Type(() => Number)
   planId: number;
 }

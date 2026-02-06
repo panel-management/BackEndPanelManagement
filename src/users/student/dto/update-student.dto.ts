@@ -47,12 +47,12 @@ export class UpdateStudentDto {
   diseaseRecords?: boolean;
 
   @IsInt({ each: true, message: 'شناسه کمربند باید یک عدد باشد' })
-  @Type(() => Number)
   @IsOptional()
+  @Type(() => Number)
   beltIds?: number;
 
   @IsInt({ each: true, message: 'شناسه پلن باید یک عدد باشد' })
-  @Type(() => Number)
   @IsOptional()
+  @Type(() => Number)
   planId?: number;
 }

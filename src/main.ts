@@ -6,9 +6,12 @@ import compression from 'compression';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AllExceptionFilter } from './common/filters/all-exception.filter';
 import { LoggerService } from './common/logger/logger.service';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { logger: false });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: false,
+  });
 
   app.use(helmet());
 
@@ -52,6 +55,6 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(3000);
 }
 bootstrap();

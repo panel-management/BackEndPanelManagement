@@ -1,12 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsDate,
-  IsInt,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Matches,
-} from 'class-validator';
+import { IsDate, IsInt, IsOptional, IsString, Matches } from 'class-validator';
 
 export class UpdateMasterDto {
   @IsString()
@@ -22,8 +15,9 @@ export class UpdateMasterDto {
   @Matches(/^09\d{9}$/, { message: 'فرمت شماره تلفن نامعتبر است' })
   phoneNumber?: string;
 
-  @IsNumber()
+  @IsInt({ message: 'سن باید به صورت عدد باشد' })
   @IsOptional()
+  @Type(() => Number)
   age?: number;
 
   @IsOptional()
@@ -39,8 +33,8 @@ export class UpdateMasterDto {
   @IsOptional()
   certificates?: string;
 
+  @IsInt({ message: 'شناسه ورزش باید یک عدد صحیح باشد' })
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'شناسه ورزش باید یک عدد صحیح باشد' })
   sportId?: number;
 }

@@ -1,23 +1,12 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  forwardRef,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Role } from 'src/auth/enums/role.enum';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { UpdateMasterDto } from './dto/update-master.dto';
-import {
-  Active,
-  MasterPlanType,
-  SubscriptionPaymentStatus,
-} from '@prisma/client';
-import { join } from 'path';
-import fs from 'fs';
+import { MasterPlanType, SubscriptionPaymentStatus } from '@prisma/client';
 import { FinancialsService } from 'src/financials/financials.service';
-import { SmsServiceService } from 'src/sms-service/sms-service.service';
+import { UpdateMasterDto } from './dto/update-master.dto';
+import { SmsService } from 'src/sms/sms.service';
+import { UpdateStatusDto } from 'src/common/dto/updateStatus.dto';
+import { fileUtils } from 'src/common/utils/file-upload.util';
 
 type UpdatedMasterData = {
   fullName: string | null;
@@ -29,21 +18,17 @@ type UpdatedMasterData = {
   certificates: string | null;
 };
 
-type ChangedStatusCoach = {
-  active: string;
-};
-
 @Injectable()
 export class MasterService {
   constructor(
-    private readonly prismaService: PrismaService,
-    @Inject(forwardRef(() => FinancialsService))
+    private readonly prisma: PrismaService,
     private readonly financialsService: FinancialsService,
-    private readonly smsService: SmsServiceService,
+    private readonly smsService: SmsService,
   ) {}
 
-  async getAllMaster() {
-    const masters = await this.prismaService.users.findMany({
+  // get master
+  async getMaster() {
+    const masters = await this.prisma.users.findMany({
       where: { type: Role.Master },
       select: {
         user_id: true,
@@ -51,7 +36,7 @@ export class MasterService {
         nationalCode: true,
         phoneNumber: true,
         history: true,
-        active: true,
+        isActive: true,
         type: true,
         sport: true,
         subscriptionPayments: {
@@ -80,7 +65,7 @@ export class MasterService {
         nationalCode: master.nationalCode,
         phoneNumber: master.phoneNumber,
         history: master.history,
-        active: master.active,
+        active: master.isActive,
         type: master.type,
         sport: master.sport,
         studentCount: master._count.students,
@@ -91,15 +76,15 @@ export class MasterService {
     });
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'لیست استاد های باشگاه با موفقیت دریافت شد',
       data: mastersWithStatus,
     };
   }
 
-  // see profile just master
+  // get profile for himself master
   async getMasterById(masterId: number) {
-    const getMaster = await this.prismaService.users.findUnique({
+    const getMaster = await this.prisma.users.findUnique({
       where: { user_id: masterId, type: Role.Master },
       select: {
         user_id: true,
@@ -108,7 +93,7 @@ export class MasterService {
         phoneNumber: true,
         nationalCode: true,
         image: true,
-        active: true,
+        isActive: true,
         age: true,
         birthDate: true,
         history: true,
@@ -134,29 +119,29 @@ export class MasterService {
     });
 
     if (getMaster?.type !== Role.Master) {
-      throw new ForbiddenException({
-        statusCode: 403,
-        message: 'کاربر مورد نظر از نوع استاد نیست',
-      });
+      throw new HttpException(
+        'کاربر مورد نظر از نوع استاد نیست',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     if (!getMaster) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'استادی با این مشخصات یافت نشد',
-      });
+      throw new HttpException(
+        'استادی با این مشخصات یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'استاد با موفقیت یافت شد',
       data: getMaster,
     };
   }
 
-  // see profile all master just admin
+  // get profile master for admin
   async getMasterByIdSeeAdmin(masterId: number) {
-    const getMaster = await this.prismaService.users.findUnique({
+    const getMaster = await this.prisma.users.findUnique({
       where: { user_id: masterId, type: Role.Master },
       select: {
         user_id: true,
@@ -165,7 +150,7 @@ export class MasterService {
         phoneNumber: true,
         nationalCode: true,
         image: true,
-        active: true,
+        isActive: true,
         age: true,
         birthDate: true,
         history: true,
@@ -191,267 +176,143 @@ export class MasterService {
       },
     });
 
-    if (!getMaster) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'استادی با این مشخصات یافت نشد',
-      });
+    if (getMaster?.type !== Role.Master) {
+      throw new HttpException(
+        'کاربر مورد نظر یک استاد نیست',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
-    if (getMaster.type !== Role.Master) {
-      throw new ForbiddenException({
-        statusCode: 403,
-        message: 'کاربر مورد نظر یک استاد نیست',
-      });
+    if (!getMaster) {
+      throw new HttpException(
+        'استادی با این مشخصات یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'استاد با موفقیت یافت شد',
       data: getMaster,
     };
   }
 
-  // select plan just one master in admin
+  // select plan for master just admin
   async assignPlanToMaster(masterId: number, planId: number) {
     const [master, plan] = await Promise.all([
-      this.prismaService.users.findUnique({ where: { user_id: masterId } }),
+      this.prisma.users.findUnique({ where: { user_id: masterId } }),
       this.financialsService.findMasterPlanById(planId),
     ]);
 
     const now = new Date();
 
     if (!master) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'استاد با این مشخصات یافت نشد',
-      });
+      throw new HttpException(
+        'استاد با این مشخصات یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     if (!plan) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'پلن اشتراک یافت نشد',
-      });
+      throw new HttpException('پلن اشتراک یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     if (master.type !== Role.Master) {
-      throw new BadRequestException({
-        statusCode: 400,
-        message: 'امکان اختصاص پلن به این کاربر وجود ندارد',
-      });
+      throw new HttpException(
+        'امکان اختصاص پلن به این کاربر وجود ندارد',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     if (master.planEndsAt && master.planEndsAt > now) {
-      throw new BadRequestException({
-        statusCode: 400,
-        message: `شما در حال حاضر یک پلن فعال دارید تا تاریخ ${master.planEndsAt.toLocaleDateString('fa-IR')} لطفا پس از اتمام آن پلن جدید انتخاب کنید`,
-      });
+      throw new HttpException(
+        `شما در حال حاضر یک پلن فعال دارید تا تاریخ ${master.planEndsAt.toLocaleDateString('fa-IR')} لطفا پس از اتمام آن پلن جدید انتخاب کنید`,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
-    const pendingPayment =
-      await this.prismaService.subscriptionPayment.findFirst({
-        where: {
-          masterId: masterId,
-          status: SubscriptionPaymentStatus.PENDING,
-        },
-      });
-
-    if (pendingPayment) {
-      throw new BadRequestException({
-        statusCode: 400,
-        message:
-          'شما یک پرداخت در انتظار تایید دارید لطفا صبر کنید تا پرداخت قبلی بررسی شود',
-      });
-    }
-
-    if (plan.type === MasterPlanType.TRIAL) {
-      if (master.hasUsedTrial) {
-        throw new BadRequestException({
-          statusCode: 400,
-          message: 'کاربر گرامی شما قبلا پلن رایگان را استفاده کرده اید',
-        });
-      }
-
-      const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + (plan.durationInDays || 0));
-
-      const updatedMaster = await this.prismaService.users.update({
-        where: { user_id: masterId },
-        data: {
-          masterPlanId: planId,
-          planEndsAt: trialEndsAt,
-          hasUsedTrial: true,
-        },
-      });
-
-      const message = `سلام مدیر محترم ${master.fullName}
-پلن آزمایشی "${plan.name}" برای شما فعال شد.
-تاریخ انقضا: ${updatedMaster.planEndsAt?.toLocaleDateString('fa-IR')}`;
-
-      if (master.phoneNumber) {
-        try {
-          await this.smsService.sendMessageToUser(master.phoneNumber, message);
-        } catch (error) {
-          console.error(`ارسال پیامک فعال‌سازی پلن رایگان ناموفق بود:`, error);
-        }
-      }
-
-      return {
-        statusCode: 200,
-        message: `پلن رایگان "${plan.name}" با موفقیت فعال شد`,
-        data: updatedMaster,
-      };
-    }
-
-    const updatedMaster = await this.prismaService.users.update({
-      where: { user_id: masterId },
-      data: {
-        masterPlanId: planId,
-        planEndsAt: null,
+    const pendingPayment = await this.prisma.subscriptionPayment.findFirst({
+      where: {
+        masterId: masterId,
+        status: SubscriptionPaymentStatus.PENDING,
       },
     });
 
-    const message = `سلام مدیر محترم ${master.fullName}
-پلن "${plan.name}" برای شما انتخاب شد.
-لطفاً جهت فعال‌سازی، هزینه ${Number(plan.price).toLocaleString('fa-IR')} تومان را پرداخت و رسید آن را ارسال نمایید.`;
-
-    if (master.phoneNumber) {
-      try {
-        await this.smsService.sendMessageToUser(master.phoneNumber, message);
-      } catch (error) {
-        console.error(`ارسال پیامک انتخاب پلن پولی ناموفق بود:`, error);
-      }
+    if (pendingPayment) {
+      throw new HttpException(
+        'شما یک پرداخت در انتظار تایید دارید لطفا صبر کنید تا پرداخت قبلی بررسی شود',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
-    return {
-      statusCode: 200,
-      message: `پلن "${plan.name}" انتخاب شد. لطفاً برای فعال‌سازی، هزینه را پرداخت کنید`,
-      data: updatedMaster,
-    };
+    return await this.prisma.$transaction(async (tx) => {
+      if (plan.type === MasterPlanType.TRIAL) {
+        if (master.hasUsedTrial) {
+          throw new HttpException(
+            'کاربر گرامی شما قبلا پلن رایگان را استفاده کرده اید',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + (plan.durationInDays || 0));
+
+        const updatedMaster = await tx.users.update({
+          where: { user_id: masterId },
+          data: {
+            masterPlanId: planId,
+            planEndsAt: trialEndsAt,
+            hasUsedTrial: true,
+          },
+        });
+
+        if (master.phoneNumber) {
+          this.smsService.sendMessageToUser(
+            master.phoneNumber,
+            `سلام مدیر محترم ${master.fullName}
+  پلن آزمایشی "${plan.name}" برای شما فعال شد.
+  تاریخ انقضا: ${updatedMaster.planEndsAt?.toLocaleDateString('fa-IR')}`,
+          );
+        }
+
+        return {
+          statusCode: HttpStatus.OK,
+          message: `${plan.name} با موفقیت فعال شد`,
+          data: updatedMaster,
+        };
+      }
+
+      const updatedMaster = await tx.users.update({
+        where: { user_id: masterId },
+        data: {
+          masterPlanId: planId,
+          planEndsAt: null,
+        },
+      });
+
+      if (master.phoneNumber) {
+        this.smsService.sendMessageToUser(
+          master.phoneNumber,
+          `سلام مدیر محترم ${master.fullName}
+  پلن "${plan.name}" برای شما انتخاب شد.
+  لطفاً جهت فعال‌سازی، هزینه ${Number(plan.price).toLocaleString('fa-IR')} تومان را پرداخت و رسید آن را ارسال نمایید.`,
+        );
+      }
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: `${plan.name} انتخاب شد. لطفاً برای فعال‌سازی، هزینه را پرداخت کنید`,
+        data: updatedMaster,
+      };
+    });
   }
 
-  // // select plan just your self master
-  // async getMasterPlanStatus(masterId: number) {
-  //   const master = await this.prismaService.users.findUnique({
-  //     where: { user_id: masterId },
-  //     include: { masterPlan: true },
-  //   });
-
-  //   if (master?.type === Role.Admin) {
-  //     return {
-  //       statusCode: 200,
-  //       message: 'شما دسترسی ادمین دارید',
-  //       isActive: true,
-  //       isAdmin: true,
-  //       data: {
-  //         planName: 'دسترسی نامحدود ادمین',
-  //         planType: 'UNLIMITED',
-  //         isActive: true,
-  //         isAdmin: true,
-  //       },
-  //     };
-  //   }
-
-  //   if (!master || !master.masterPlan) {
-  //     return {
-  //       statusCode: 200,
-  //       message: 'شما در حال حاضر هیچ پلن فعالی ندارید',
-  //       isActive: false,
-  //     };
-  //   }
-
-  //   const plan = master.masterPlan;
-  //   const now = new Date();
-
-  //   const pendingPayment =
-  //     await this.prismaService.subscriptionPayment.findFirst({
-  //       where: {
-  //         masterId: masterId,
-  //         planId: master.masterPlanId,
-  //         status: SubscriptionPaymentStatus.PENDING,
-  //       },
-  //     });
-
-  //   if (pendingPayment) {
-  //     return {
-  //       statusCode: 202,
-  //       message:
-  //         'رسید پرداخت شما در حال بررسی است. لطفاً صبر کنید تا توسط ادمین تایید شود',
-  //       isActive: false,
-  //       isPending: true,
-  //       data: {
-  //         planName: plan.name,
-  //         planPrice: Number(plan.price || 0),
-  //         paymentStatus: 'PENDING',
-  //       },
-  //     };
-  //   }
-
-  //   if (!master.planEndsAt) {
-  //     return {
-  //       statusCode: 202,
-  //       message: `شما پلن "${plan.name}" را انتخاب کرده‌اید. برای فعال‌سازی، لطفاً هزینه ${Number(plan.price || 0).toLocaleString('fa-IR')} تومان را پرداخت و رسید را ارسال کنید`,
-  //       isActive: false,
-  //       needsPayment: true,
-  //       data: {
-  //         planName: plan.name,
-  //         planPrice: Number(plan.price || 0),
-  //         paymentStatus: 'NOT_PAID',
-  //       },
-  //     };
-  //   }
-
-  //   const startsAt = new Date(master.planEndsAt);
-  //   startsAt.setDate(startsAt.getDate() - (plan.durationInDays || 0));
-  //   const endsAt = master.planEndsAt;
-
-  //   if (now > endsAt) {
-  //     return {
-  //       statusCode: 403,
-  //       message: 'پلن شما منقضی شده است. لطفاً پلن جدیدی انتخاب کنید',
-  //       isActive: false,
-  //       isExpired: true,
-  //     };
-  //   }
-
-  //   const totalDurationMs = endsAt.getTime() - startsAt.getTime();
-  //   const elapsedMs = now.getTime() - startsAt.getTime();
-  //   const daysTotal = Math.round(totalDurationMs / (1000 * 60 * 60 * 24));
-  //   const daysLeft = Math.ceil(
-  //     (endsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-  //   );
-  //   const progressPercentage = Math.min(
-  //     100,
-  //     (elapsedMs / totalDurationMs) * 100,
-  //   );
-
-  //   const data = {
-  //     planName: plan.name,
-  //     planType: plan.type,
-  //     isActive: true,
-  //     startsAt: startsAt.toISOString(),
-  //     endsAt: endsAt.toISOString(),
-  //     daysTotal: daysTotal,
-  //     daysLeft: daysLeft,
-  //     progressPercentage: parseFloat(progressPercentage.toFixed(1)),
-  //   };
-
-  //   return {
-  //     statusCode: 200,
-  //     message: 'وضعیت پلن با موفقیت دریافت شد',
-  //     data: data,
-  //   };
-  // }
-
-  // select plan just your self master
-  async selectPlanForSelf(masterId: number, planId: number) {
-    const planMaster = await this.assignPlanToMaster(masterId, planId);
-
+  // select plan himself master
+  async selectPlanHimSelf(masterId: number, planId: number) {
     return {
       statusCode: 200,
       message: 'پلن انتخاب شده با موفقیت ثبت شد',
-      data: planMaster,
+      data: await this.assignPlanToMaster(masterId, planId),
     };
   }
 
@@ -465,14 +326,15 @@ export class MasterService {
     message: string;
     data: UpdatedMasterData;
   }> {
-    await this.getMasterById(masterId);
+    const master = await this.getMasterById(masterId);
 
     let imageUrl: string | undefined = undefined;
     if (file) {
-      imageUrl = `${process.env.APP_URL}uploads/masters/${file.filename}`;
+      fileUtils.deleteFile(master.data.image);
+      imageUrl = fileUtils.createImageUrl(file.filename, 'masters');
     }
 
-    const updateMaster = await this.prismaService.users.update({
+    const updateMaster = await this.prisma.users.update({
       where: { user_id: masterId, type: Role.Master },
       data: {
         fullName: dto.fullName,
@@ -483,7 +345,7 @@ export class MasterService {
         history: dto.history,
         certificates: dto.certificates,
         ...(dto.sportId && { sportId: dto.sportId }),
-        image: imageUrl,
+        ...(imageUrl && { image: imageUrl }),
       },
       select: {
         user_id: true,
@@ -501,75 +363,76 @@ export class MasterService {
     });
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'پروفایل با موفقیت بروزرسانی شد',
       data: updateMaster,
     };
   }
 
-  // change Status Just Admin
-  async updateStatusMaster(
+  // change status master for admin
+  async changeStatusAccount(
     masterId: number,
-    active: Active,
+    status: UpdateStatusDto,
   ): Promise<{
     statusCode: number;
     message: string;
-    data: ChangedStatusCoach;
+    data: UpdateStatusDto;
   }> {
     await this.getMasterById(masterId);
-    const changeStatus = await this.prismaService.users.update({
+
+    const changeStatus = await this.prisma.users.update({
       where: { user_id: masterId, type: Role.Master },
-      data: {
-        active: active,
-      },
+      data: { isActive: status.isActive },
       select: {
-        active: true,
+        isActive: true,
       },
     });
 
+    const statusMessage = changeStatus.isActive ? 'فعال' : 'غیر فعال';
+
     return {
-      statusCode: 200,
-      message: 'وضعیت استاد با موفقیت تغییر کرد',
+      statusCode: HttpStatus.OK,
+      message: `وضعیت مربی با موفقیت به ${statusMessage} تغییر یافت`,
       data: changeStatus,
     };
   }
 
-  // Delete Account Just Admin
+  // delete account master
   async deleteMaster(
     masterId: number,
   ): Promise<{ statusCode: number; message: string }> {
-    const masterResponse = await this.getMasterById(masterId);
-    const master = masterResponse.data;
+    const master = await this.getMasterById(masterId);
 
-    if (master.image) {
-      try {
-        const imagePath = new URL(master.image).pathname;
-        const fullPath = join(process.cwd(), imagePath);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
-        }
-      } catch (error) {
-        console.error(
-          `error in the delete image ${master.image}`,
-          error.message,
-        );
-      }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.plan.deleteMany({ where: { masterId: masterId } });
+
+      await tx.ticket.deleteMany({ where: { userId: masterId } });
+
+      await tx.clubProfile.deleteMany({ where: { userId: masterId } });
+
+      await tx.subscriptionPayment.deleteMany({
+        where: { masterId: masterId },
+      });
+
+      await tx.users.deleteMany({
+        where: {
+          masterId: masterId,
+          type: { in: [Role.Student, Role.Coach] },
+        },
+      });
+
+      await tx.users.delete({
+        where: { user_id: masterId, type: Role.Master },
+      });
+    });
+
+    if (master.data.image) {
+      fileUtils.deleteFile(master.data.image);
     }
 
-    await this.prismaService.$transaction(async (prisma) => {
-      try {
-        await prisma.clubProfile.deleteMany({
-          where: { userId: masterId },
-        });
-      } catch (error: any) {
-        console.log(error);
-      }
-    });
-
-    await this.prismaService.users.delete({
-      where: { user_id: masterId, type: Role.Master },
-    });
-
-    return { statusCode: 200, message: 'استاد باشگاه با موفقیت حذف شد' };
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'استاد و تمامی اطلاعات وابسته با موفقیت حذف شدند',
+    };
   }
 }

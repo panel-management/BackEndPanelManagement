@@ -10,22 +10,19 @@ import { FinancialsModule } from 'src/financials/financials.module';
 import { ClubProfileService } from './club-profile/club-profile.service';
 import { ClubProfileController } from './club-profile/club-profile.controller';
 import { ClubProfileModule } from './club-profile/club-profile.module';
-import { SmsServiceModule } from 'src/sms-service/sms-service.module';
-import { UserModule } from './user/user.module';
+import { UsersController } from './users.controller';
 
 @Module({
-  providers: [UsersService, StudentService, ClubProfileService],
-  exports: [UsersService],
-  controllers: [StudentController, ClubProfileController],
   imports: [
-    SmsServiceModule,
     StudentModule,
     SportBeltModule,
     CoachModule,
     MasterModule,
     FinancialsModule,
     ClubProfileModule,
-    UserModule,
   ],
+  providers: [UsersService, StudentService, ClubProfileService],
+  controllers: [UsersController, StudentController, ClubProfileController],
+  exports: [UsersService],
 })
 export class UsersModule {}

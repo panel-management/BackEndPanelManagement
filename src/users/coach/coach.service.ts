@@ -1,16 +1,11 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCoachDto } from './dto/create-coach.dto';
-import { Role } from 'src/auth/enums/role.enum';
-import { Active, Prisma } from '@prisma/client';
 import { UpdateCoachDto } from './dto/update-coach.dto';
-import { join } from 'path';
-import fs from 'fs';
+import { UpdateStatusDto } from 'src/common/dto/updateStatus.dto';
+import { Role } from 'src/auth/enums/role.enum';
+import { Prisma } from '@prisma/client';
+import { fileUtils } from 'src/common/utils/file-upload.util';
 
 type UpdatedCoachData = {
   fullName: string | null;
@@ -20,16 +15,13 @@ type UpdatedCoachData = {
   certificates: string | null;
 };
 
-type ChangedStatusCoach = {
-  active: string;
-};
-
 @Injectable()
 export class CoachService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async getAllCoach(masterId: number) {
-    const getCoach = await this.prismaService.users.findMany({
+  // get coach by master
+  async getCoach(masterId: number) {
+    const getCoach = await this.prisma.users.findMany({
       where: { masterId: masterId, type: Role.Coach },
       select: {
         user_id: true,
@@ -41,7 +33,7 @@ export class CoachService {
         history: true,
         certificates: true,
         image: true,
-        active: true,
+        isActive: true,
         type: true,
         sport: true,
         createdAt: true,
@@ -53,15 +45,16 @@ export class CoachService {
     });
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'لیست مربی ها با موفقیت دریافت شد',
       data: getCoach,
     };
   }
 
+  // get profile coach by himself
   async getCoachProfile(coachId: number) {
-    const getCoach = await this.prismaService.users.findUnique({
-      where: { user_id: coachId },
+    const getCoach = await this.prisma.users.findUnique({
+      where: { user_id: coachId, type: Role.Coach },
       select: {
         user_id: true,
         fullName: true,
@@ -72,7 +65,7 @@ export class CoachService {
         history: true,
         certificates: true,
         image: true,
-        active: true,
+        isActive: true,
         type: true,
         sport: true,
         createdAt: true,
@@ -81,28 +74,29 @@ export class CoachService {
     });
 
     if (getCoach?.type !== Role.Coach) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'مربی با این مشخصات یافت نشد',
-      });
+      throw new HttpException(
+        'مربی با این مشخصات یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     if (!getCoach) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'مربی با این مشخصات یافت نشد',
-      });
+      throw new HttpException(
+        'مربی با این مشخصات یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'مربی با موفقیت یافت شد',
       data: getCoach,
     };
   }
 
+  // get coach by id for master
   async getCoachById(coachId: number, masterId: number) {
-    const getCoach = await this.prismaService.users.findUnique({
+    const getCoach = await this.prisma.users.findUnique({
       where: { user_id: coachId },
       select: {
         user_id: true,
@@ -114,7 +108,7 @@ export class CoachService {
         history: true,
         certificates: true,
         image: true,
-        active: true,
+        isActive: true,
         type: true,
         masterId: true,
         sport: true,
@@ -123,84 +117,52 @@ export class CoachService {
       },
     });
 
-    if (
-      !getCoach ||
-      getCoach.masterId !== masterId ||
-      getCoach.type !== Role.Coach
-    ) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'مربی با این مشخصات یافت نشد',
-      });
+    if (getCoach?.type !== Role.Coach) {
+      throw new HttpException(
+        'مربی با این مشخصات یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (!getCoach || getCoach.masterId !== masterId) {
+      throw new HttpException(
+        'مربی با این مشخصات یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'مربی با موفقیت یافت شد',
       data: getCoach,
     };
   }
 
-  async getById(coachId: number) {
-    const getCoach = await this.prismaService.users.findUnique({
-      where: { user_id: coachId },
-      select: {
-        user_id: true,
-        fullName: true,
-        nationalCode: true,
-        phoneNumber: true,
-        birthDate: true,
-        age: true,
-        history: true,
-        certificates: true,
-        image: true,
-        active: true,
-        type: true,
-        sport: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    if (!getCoach || getCoach.type !== Role.Coach) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'مربی با این مشخصات یافت نشد',
-      });
-    }
-
-    return {
-      statusCode: 200,
-      message: 'مربی با موفقیت یافت شد',
-      data: getCoach,
-    };
-  }
-
+  // create coach for master
   async createCoach(
     masterId: number,
     dto: CreateCoachDto,
     file?: Express.Multer.File,
   ) {
     try {
-      const master = await this.prismaService.users.findUnique({
+      const master = await this.prisma.users.findUnique({
         where: { user_id: masterId },
         include: { sport: true },
       });
 
       if (!master || !master.sport) {
-        throw new ForbiddenException({
-          statusCode: 403,
-          message:
-            'برای ساخت مربی، شما به عنوان استاد باید ابتدا رشته ورزشی خود را در پروفایل مشخص کنید',
-        });
+        throw new HttpException(
+          'برای ساخت مربی، شما به عنوان استاد باید ابتدا رشته ورزشی خود را در پروفایل مشخص کنید',
+          HttpStatus.FORBIDDEN,
+        );
       }
 
       let imageUrl: string | undefined = undefined;
       if (file) {
-        imageUrl = `${process.env.APP_URL}uploads/coachs/${file.filename}`;
+        imageUrl = fileUtils.createImageUrl(file.filename, 'coachs');
       }
 
-      const newCoach = await this.prismaService.users.create({
+      const newCoach = await this.prisma.users.create({
         data: {
           fullName: dto.fullName,
           nationalCode: dto.nationalCode,
@@ -228,7 +190,7 @@ export class CoachService {
       });
 
       return {
-        statusCode: 201,
+        statusCode: HttpStatus.CREATED,
         message: 'مربی با موفقیت ایجاد شد',
         data: newCoach,
       };
@@ -239,22 +201,23 @@ export class CoachService {
       ) {
         const target = error.meta?.target as string[];
         if (target?.includes('phoneNumber')) {
-          throw new ConflictException({
-            statusCode: 409,
-            message: 'کاربری با این شماره تلفن از قبل وجود دارد',
-          });
+          throw new HttpException(
+            'کاربری با این شماره تلفن از قبل وجود دارد',
+            HttpStatus.CONFLICT,
+          );
         }
         if (target?.includes('nationalCode')) {
-          throw new ConflictException({
-            statusCode: 409,
-            message: 'کاربری با این کد ملی از قبل وجود دارد',
-          });
+          throw new HttpException(
+            'کاربری با این کد ملی از قبل وجود دارد',
+            HttpStatus.CONFLICT,
+          );
         }
       }
       throw error;
     }
   }
 
+  // update coach profile himself
   async updateCoachProfile(
     coachId: number,
     dto: UpdateCoachDto,
@@ -264,14 +227,15 @@ export class CoachService {
     message: string;
     data: UpdatedCoachData;
   }> {
-    await this.getById(coachId);
+    const coach = await this.getCoachProfile(coachId);
 
     let imageUrl: string | undefined = undefined;
     if (file) {
-      imageUrl = `${process.env.APP_URL}uploads/coachs/${file.filename}`;
+      fileUtils.deleteFile(coach.data.image);
+      imageUrl = fileUtils.createImageUrl(file.filename, 'coachs');
     }
 
-    const updateCoach = await this.prismaService.users.update({
+    const updateCoach = await this.prisma.users.update({
       where: { user_id: coachId, type: Role.Coach },
       data: {
         fullName: dto.fullName,
@@ -281,7 +245,7 @@ export class CoachService {
         age: dto.age,
         history: dto.history,
         certificates: dto.certificates,
-        image: imageUrl,
+        ...(imageUrl && { image: imageUrl }),
       },
       select: {
         user_id: true,
@@ -297,12 +261,13 @@ export class CoachService {
     });
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'پروفایل با موفقیت بروزرسانی شد',
       data: updateCoach,
     };
   }
 
+  // update coach for master
   async updateCoach(
     coachId: number,
     masterId: number,
@@ -313,14 +278,15 @@ export class CoachService {
     message: string;
     data: UpdatedCoachData;
   }> {
-    await this.getCoachById(coachId, masterId);
+    const coach = await this.getCoachById(coachId, masterId);
 
     let imageUrl: string | undefined = undefined;
     if (file) {
-      imageUrl = `${process.env.APP_URL}uploads/coachs/${file.filename}`;
+      fileUtils.deleteFile(coach.data.image);
+      imageUrl = fileUtils.createImageUrl(file.filename, 'coachs');
     }
 
-    const updateCoach = await this.prismaService.users.update({
+    const updateCoach = await this.prisma.users.update({
       where: { user_id: coachId, type: Role.Coach },
       data: {
         fullName: dto.fullName,
@@ -330,7 +296,7 @@ export class CoachService {
         age: dto.age,
         history: dto.history,
         certificates: dto.certificates,
-        image: imageUrl,
+        ...(imageUrl && { image: imageUrl }),
       },
       select: {
         user_id: true,
@@ -346,65 +312,56 @@ export class CoachService {
     });
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'پروفایل با موفقیت بروزرسانی شد',
       data: updateCoach,
     };
   }
 
-  async updateStatusCoach(
+  // change status account
+  async changeStatusAccount(
     coachId: number,
     masterId: number,
-    active: Active,
+    status: UpdateStatusDto,
   ): Promise<{
     statusCode: number;
     message: string;
-    data: ChangedStatusCoach;
+    data: UpdateStatusDto;
   }> {
     await this.getCoachById(coachId, masterId);
-    const changeStatus = await this.prismaService.users.update({
+
+    const changeStatus = await this.prisma.users.update({
       where: { user_id: coachId, type: Role.Coach },
-      data: {
-        active: active,
-      },
+      data: { isActive: status.isActive },
       select: {
-        active: true,
+        isActive: true,
       },
     });
 
+    const statusMessage = changeStatus.isActive ? 'فعال' : 'غیر فعال';
+
     return {
-      statusCode: 200,
-      message: 'وضعیت مربی با موفقیت تغییر کرد',
+      statusCode: HttpStatus.OK,
+      message: `وضعیت مربی با موفقیت به ${statusMessage} تغییر یافت`,
       data: changeStatus,
     };
   }
 
-  async deleteCoach(
+  // delete account coach
+  async deleteAccount(
     coachId: number,
     masterId: number,
   ): Promise<{ statusCode: number; message: string }> {
-    const coachResponse = await this.getCoachById(coachId, masterId);
-    const coach = coachResponse.data;
+    const coach = await this.getCoachById(coachId, masterId);
 
-    if (coach.image) {
-      try {
-        const imagePath = new URL(coach.image).pathname;
-        const fullPath = join(process.cwd(), imagePath);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
-        }
-      } catch (error) {
-        console.error(
-          `error in the delete image ${coach.image}`,
-          error.message,
-        );
-      }
-    }
-
-    await this.prismaService.users.delete({
+    await this.prisma.users.delete({
       where: { user_id: coachId, type: Role.Coach },
     });
 
-    return { statusCode: 200, message: 'مربی با موفقیت حذف شد' };
+    if (coach.data.image) {
+      fileUtils.deleteFile(coach.data.image);
+    }
+
+    return { statusCode: HttpStatus.OK, message: 'مربی با موفقیت حذف شد' };
   }
 }

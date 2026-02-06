@@ -21,8 +21,8 @@ export class UpdateCoachDto {
   birthDate?: Date;
 
   @IsInt()
-  @Type(() => Number)
   @IsOptional()
+  @Type(() => Number)
   age?: number;
 
   @IsString()

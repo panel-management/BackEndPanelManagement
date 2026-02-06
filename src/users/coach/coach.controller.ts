@@ -20,9 +20,9 @@ import { Role } from 'src/auth/enums/role.enum';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CreateCoachDto } from './dto/create-coach.dto';
 import { UpdateCoachDto } from './dto/update-coach.dto';
-import { UpdateStatusUserDto } from './dto/updateStatus-coach.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { UpdateStatusDto } from 'src/common/dto/updateStatus.dto';
 
 @Controller('coach')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,18 +32,18 @@ export class CoachController {
   @Get()
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  getAllCoach(@Req() req) {
-    return this.coachService.getAllCoach(req.user.userId);
+  getCoach(@Req() req) {
+    return this.coachService.getCoach(req.user.userId);
   }
 
-  @Get('/profile')
+  @Get('profile')
   @Roles(Role.Coach)
   @HttpCode(HttpStatus.OK)
   getCoachProfile(@Req() req) {
     return this.coachService.getCoachProfile(req.user.userId);
   }
 
-  @Get('/:id')
+  @Get(':id')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   getCoachById(@Req() req, @Param('id', ParseIntPipe) coachId: number) {
@@ -62,7 +62,7 @@ export class CoachController {
     return this.coachService.createCoach(req.user.userId, createCoachDto, file);
   }
 
-  @Put('/update/profile')
+  @Put('update/profile')
   @Roles(Role.Coach)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('imageFile'))
@@ -78,7 +78,7 @@ export class CoachController {
     );
   }
 
-  @Put('/:id')
+  @Put(':id')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('imageFile'))
@@ -96,25 +96,25 @@ export class CoachController {
     );
   }
 
-  @Put('/changeStatus/:id')
+  @Put('changeStatus/:id')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  changeStatusCoach(
+  changeStatusAccount(
     @Req() req,
     @Param('id', ParseIntPipe) coachId: number,
-    @Body() updateStatusUserDto: UpdateStatusUserDto,
+    @Body() updateStatusDto: UpdateStatusDto,
   ) {
-    return this.coachService.updateStatusCoach(
+    return this.coachService.changeStatusAccount(
       coachId,
       req.user.userId,
-      updateStatusUserDto.active,
+      updateStatusDto,
     );
   }
 
-  @Delete('/:id')
+  @Delete(':id')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  deleteCoach(@Req() req, @Param('id', ParseIntPipe) coachId: number) {
-    return this.coachService.deleteCoach(coachId, req.user.userId);
+  deleteAccount(@Req() req, @Param('id', ParseIntPipe) coachId: number) {
+    return this.coachService.deleteAccount(coachId, req.user.userId);
   }
 }

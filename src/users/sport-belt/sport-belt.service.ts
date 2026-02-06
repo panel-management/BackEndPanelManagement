@@ -1,12 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class SportBeltService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async getAllSport() {
-    const getSport = await this.prismaService.sport.findMany({
+  async getSport() {
+    const getSport = await this.prisma.sport.findMany({
       select: {
         id: true,
         name: true,
@@ -15,38 +15,14 @@ export class SportBeltService {
     });
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'لیست ورزش ها با موفقیت دریافت شد',
       data: getSport,
     };
   }
 
-  async getSportById(id: number) {
-    const getSport = await this.prismaService.sport.findUnique({
-      where: { id: id },
-      select: {
-        id: true,
-        name: true,
-        hasBeltSystem: true,
-      },
-    });
-
-    if (!getSport || getSport.id !== id) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'ورزشی با این مشخاصت یافت نشد',
-      });
-    }
-
-    return {
-      statusCode: 200,
-      message: 'ورزش با موفقیت در یافت شد',
-      data: getSport,
-    };
-  }
-
-  async getAllBelt() {
-    const getBelt = await this.prismaService.belt.findMany({
+  async getBelt() {
+    const getBelt = await this.prisma.belt.findMany({
       select: {
         id: true,
         color: true,
@@ -54,14 +30,14 @@ export class SportBeltService {
     });
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'لیست کمربند ها با موفقیت دریافت شد',
       data: getBelt,
     };
   }
 
   async getBeltById(id: number) {
-    const getBelt = await this.prismaService.belt.findUnique({
+    const getBelt = await this.prisma.belt.findUnique({
       where: { id: id },
       select: {
         id: true,
@@ -70,14 +46,14 @@ export class SportBeltService {
     });
 
     if (!getBelt || getBelt.id !== id) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'کمربندی با این مشخاصت یافت نشد',
-      });
+      throw new HttpException(
+        'کمربندی با این مشخاصت یافت نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'کمربند با موفقیت یافت شد',
       data: getBelt,
     };

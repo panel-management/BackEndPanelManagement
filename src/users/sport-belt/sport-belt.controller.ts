@@ -22,26 +22,19 @@ export class SportBeltController {
   @Public()
   @Get('sport')
   @HttpCode(HttpStatus.OK)
-  getAllSport() {
-    return this.sportBeltService.getAllSport();
-  }
-
-  @Get('sport/:id')
-  @Roles(Role.Admin, Role.Master)
-  @HttpCode(HttpStatus.OK)
-  getSportById(@Param('id', ParseIntPipe) sportId: number) {
-    return this.sportBeltService.getSportById(sportId);
+  getSports() {
+    return this.sportBeltService.getSport();
   }
 
   @Get('belt')
-  @Roles(Role.Admin, Role.Master, Role.Coach)
+  @Roles(Role.Admin, Role.Master)
   @HttpCode(HttpStatus.OK)
-  getAllBelt() {
-    return this.sportBeltService.getAllBelt();
+  getBelts() {
+    return this.sportBeltService.getBelt();
   }
 
   @Get('belt/:id')
-  @Roles(Role.Admin, Role.Master, Role.Coach)
+  @Roles(Role.Admin, Role.Master)
   @HttpCode(HttpStatus.OK)
   getBeltById(@Param('id', ParseIntPipe) beltId: number) {
     return this.sportBeltService.getBeltById(beltId);

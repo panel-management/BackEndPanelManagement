@@ -19,18 +19,18 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('club-profile')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Master)
 export class ClubProfileController {
   constructor(private readonly clubProfile: ClubProfileService) {}
 
   @Get('view-club-profile')
-  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
   getClubProfile(@Req() req) {
     return this.clubProfile.getClubProfile(req.user.userId);
   }
 
   @Post('complete-profile-club')
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.Master)
   completeClubProfile(
     @Req() req,
     @Body() completeProfileDto: CompleteProfileDto,
@@ -42,7 +42,6 @@ export class ClubProfileController {
   }
 
   @Put('update-profile-club')
-  @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   updateClubProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDto) {
     return this.clubProfile.updateClubProfile(

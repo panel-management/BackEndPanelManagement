@@ -1,111 +1,74 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CompleteProfileDto } from './dto/complete-profile.dto';
 import { Prisma } from '@prisma/client';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { SmsServiceService } from 'src/sms-service/sms-service.service';
+import { Role } from 'src/auth/enums/role.enum';
 
 @Injectable()
 export class ClubProfileService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly smsService: SmsServiceService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getClubProfile(masterId: number) {
     const profile = await this.prisma.clubProfile.findUnique({
-      where: { userId: masterId },
+      where: { userId: masterId, user: { type: Role.Master } },
     });
 
     if (!profile) {
-      return {
-        statusCode: 200,
-        message: 'پروفایل باشگاه هنوز ایجاد نشده است',
-        data: null,
-      };
+      throw new HttpException(
+        'پروفایل باشگاه هنوز ایجاد نشده است',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'اطلاعات پروفایل باشگاه با موفقیت دریافت شد',
       data: profile,
     };
   }
 
   async completeClubProfile(masterId: number, dto: CompleteProfileDto) {
-    const user = await this.prisma.users.findUnique({
-      where: { user_id: masterId },
-      select: { phoneNumber: true, fullName: true, user_id: true },
-    });
-
-    let clubProfile = await this.prisma.clubProfile.findUnique({
-      where: { userId: user?.user_id },
+    const user = await this.prisma.users.findFirst({
+      where: { user_id: masterId, type: Role.Master },
+      include: { clubProfile: { select: { isProfileComplete: true } } },
     });
 
     if (!user) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'کاربر با این مشخصات پیدا نشد',
-      });
+      throw new HttpException(
+        'کاربر با این مشخصات پیدا نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
-    if (clubProfile?.isProfileComplete) {
-      throw new ForbiddenException({
-        statusCode: 403,
-        message: 'پروفایل باشگاه شما قبلا تکمیل شده است',
-      });
+    if (user.clubProfile?.isProfileComplete) {
+      throw new HttpException(
+        'پروفایل باشگاه شما قبلا تکمیل شده است',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
-    if (!clubProfile) {
-      clubProfile = await this.prisma.clubProfile.create({
-        data: {
-          user: { connect: { user_id: masterId } },
-          clubName: dto.clubName,
-          activityType: dto.activityType,
-          clubAddress: dto.clubAddress,
-          aboutClub: dto.aboutClub,
-          clubPhoneNumber: dto.clubPhoneNumber,
-          foundationDate: dto.foundationDate,
-          goal: dto.goal,
-          socialNetworks: dto.socialNetworks
-            ? (dto.socialNetworks as Prisma.JsonObject)
-            : Prisma.JsonNull,
-          isProfileComplete: true,
-        },
-      });
-    } else {
-      clubProfile = await this.prisma.clubProfile.update({
-        where: {
-          userId: masterId,
-        },
-        data: {
-          ...dto,
-          socialNetworks: dto.socialNetworks
-            ? (dto.socialNetworks as Prisma.JsonObject)
-            : undefined,
-        },
-      });
-    }
-
-    if (user.phoneNumber) {
-      const message = `مدیر محترم ${user.fullName}
-اطلاعات شما با موفقیت تکمیل شد حالا می توانید پلن خود را انتخاب و از پنل برای اداره باشگاه خود استفاده کنید با تشکر ما را انتخاب کردید.`;
-      try {
-        await this.smsService.sendMessageToUser(user.phoneNumber, message);
-      } catch (error) {
-        console.error(
-          `ارسال پیامک تکمیل پروفایل به ${user.phoneNumber} ناموفق بود:`,
-          error,
-        );
-      }
-    }
+    const clubProfile = await this.prisma.clubProfile.upsert({
+      where: { userId: masterId },
+      create: {
+        userId: masterId,
+        ...dto,
+        socialNetworks: dto.socialNetworks
+          ? (dto.socialNetworks as Prisma.JsonObject)
+          : undefined,
+        isProfileComplete: true,
+      },
+      update: {
+        ...dto,
+        socialNetworks: dto.socialNetworks
+          ? (dto.socialNetworks as Prisma.JsonObject)
+          : undefined,
+        isProfileComplete: true,
+      },
+    });
 
     return {
-      statusCode: 201,
+      statusCode: HttpStatus.CREATED,
       message: 'اطلاعات باشگاه با موفقیت تکمیل شد',
       data: clubProfile,
     };
@@ -113,20 +76,18 @@ export class ClubProfileService {
 
   async updateClubProfile(masterId: number, dto: UpdateProfileDto) {
     const profile = await this.prisma.clubProfile.findUnique({
-      where: { userId: masterId },
+      where: { userId: masterId, user: { type: Role.Master } },
     });
 
     if (!profile) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'پروفایل استاد با این مشخصات پیدا نشد',
-      });
+      throw new HttpException(
+        'پروفایل استاد با این مشخصات پیدا نشد',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     const clubProfile = await this.prisma.clubProfile.update({
-      where: {
-        userId: masterId,
-      },
+      where: { userId: masterId },
       data: {
         ...dto,
         socialNetworks: dto.socialNetworks
@@ -136,7 +97,7 @@ export class ClubProfileService {
     });
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'اطلاعات باشگاه با موفقیت اپدیت شد',
       data: clubProfile,
     };

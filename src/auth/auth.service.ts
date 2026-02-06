@@ -1,48 +1,50 @@
-import {
-  ConflictException,
-  HttpException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
+import { SmsService } from 'src/sms/sms.service';
 import { CompleteRegistrationDto } from './dto/complete-registration.dto';
-import { SmsServiceService } from 'src/sms-service/sms-service.service';
+import { JwtService } from '@nestjs/jwt';
 import { Role } from './enums/role.enum';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { randomInt } from 'crypto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly userService: UsersService,
-    private readonly smsService: SmsServiceService,
+    private readonly smsService: SmsService,
     private readonly jwtService: JwtService,
   ) {}
 
+  private checkOtpExpiration(requestedAt: Date | null) {
+    if (!requestedAt)
+      throw new HttpException('کد تایید یافت نشد', HttpStatus.UNAUTHORIZED);
+    const diffInMinutes =
+      (Date.now() - new Date(requestedAt).getTime()) / 1000 / 60;
+    if (diffInMinutes > 1) {
+      throw new HttpException(
+        'کد تایید منقضی شده است',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+  }
+
   async validateUserById(userId: number) {
-    const user = await this.prisma.users.findUnique({
+    return this.prisma.users.findUnique({
       where: { user_id: userId },
     });
-
-    return user;
   }
 
   async requestOtp(phoneNumber: string) {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = randomInt(100000, 900000).toString();
     let user = await this.userService.findByPhoneNumber(phoneNumber);
 
     if (user && user.codeRequestedAt) {
-      const now = new Date();
-      const lastRequestTime = new Date(user.codeRequestedAt);
-      const diffInSeconds = (now.getTime() - lastRequestTime.getTime()) / 1000;
+      const diffInSeconds =
+        (Date.now() - new Date(user.codeRequestedAt).getTime()) / 1000;
       if (diffInSeconds < 60) {
-        const timeLeft = Math.ceil(60 - diffInSeconds);
-
         throw new HttpException(
-          `لطفا ${timeLeft} ثانیه دیگر دوباره امتحان کنید`,
+          `لطفا ${Math.ceil(60 - diffInSeconds)} ثانیه دیگر دوباره امتحان کنید`,
           HttpStatus.TOO_MANY_REQUESTS,
         );
       }
@@ -55,7 +57,7 @@ export class AuthService {
     await this.smsService.sendOtpCode(user.user_id, user.phoneNumber!, otp);
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'کد تایید با موفقیت ارسال شد',
       data: otp,
     };
@@ -65,18 +67,16 @@ export class AuthService {
     const user = await this.userService.findByPhoneNumber(phoneNumber);
 
     if (!user || !user.fullName) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message:
-          'کاربری با این مشخصات یافت نشد ثبت‌ نام شما کامل نیست. لطفا ابتدا ثبت‌نام کنید',
-      });
+      throw new HttpException(
+        'کاربر یافت نشد یا ثبت‌ نام تکمیل نشده لطفا ابتدا ثبت‌ نام کنید',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
+    this.checkOtpExpiration(user.codeRequestedAt);
+
     if (user.code !== code) {
-      throw new UnauthorizedException({
-        statusCode: 401,
-        message: 'کد تایید نامعتبر است',
-      });
+      throw new HttpException('کد تایید نامعتبر است', HttpStatus.UNAUTHORIZED);
     }
 
     await this.smsService.clearOtp(user.user_id);
@@ -86,34 +86,40 @@ export class AuthService {
       phone: user.phoneNumber,
       type: user.type,
     };
-    const accessToken = this.jwtService.sign(payload);
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'ورود با موفقیت انجام شد',
-      data: accessToken,
+      data: this.jwtService.sign(payload),
     };
   }
 
-  async completeRegistration(dto: CompleteRegistrationDto) {
+  async registration(dto: CompleteRegistrationDto) {
     const { phoneNumber, code, fullName, nationalCode, sportId } = dto;
     const user = await this.userService.findByPhoneNumber(phoneNumber);
 
-    if (!user || user.code !== dto.code) {
-      throw new UnauthorizedException({
-        statusCode: 401,
-        message: 'شماره تلفن یا کد تایید نامعتبر است',
-      });
+    if (!user) {
+      throw new HttpException(
+        'کاربر یافت نشد لطفا ابتدا ثبت‌ نام کنید',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    this.checkOtpExpiration(user.codeRequestedAt);
+
+    if (user.code !== code) {
+      throw new HttpException('کد تایید نامعتبر است', HttpStatus.UNAUTHORIZED);
     }
 
     if (user.fullName) {
-      throw new ConflictException({
-        statusCode: 409,
-        message: 'این شماره تلفن قبلاً ثبت‌ نام شده است',
-      });
+      throw new HttpException(
+        'این شماره تلفن قبلاً ثبت‌ نام شده است',
+        HttpStatus.CONFLICT,
+      );
     }
 
     const updateUser = await this.userService.updateProfile(user.user_id, {
       fullName,
+      phoneNumber,
       nationalCode,
       sportId,
       type: Role.Master,
@@ -121,11 +127,12 @@ export class AuthService {
 
     await this.smsService.clearOtp(user.user_id);
 
-    const message = `سلام مدیر محترم ${fullName}
-    ثبت نام شما با موفقیت انجام شد لطف برای استفاده از پنل باشگاه هوشمند اطلاعات خود را تکمیل کنید✅`;
-
     try {
-      await this.smsService.sendMessageToUser(phoneNumber, message);
+      await this.smsService.sendMessageToUser(
+        phoneNumber,
+        `سلام مدیر محترم ${fullName}
+ثبت نام شما با موفقیت انجام شد لطف برای استفاده از پنل باشگاه هوشمند اطلاعات خود را تکمیل کنید✅`,
+      );
     } catch (error) {
       console.error(
         `ارسال پیامک خوش آمدگویی به ${phoneNumber} ناموفق بود:`,
@@ -138,11 +145,10 @@ export class AuthService {
       phoneNumber: updateUser.phoneNumber,
       type: updateUser.type,
     };
-    const accessToken = this.jwtService.sign(payload);
     return {
-      statusCode: 201,
+      statusCode: HttpStatus.CREATED,
       message: 'ثبت نام با موفقیت انجام شد',
-      data: accessToken,
+      data: this.jwtService.sign(payload),
     };
   }
 }

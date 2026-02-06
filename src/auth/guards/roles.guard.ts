@@ -1,7 +1,8 @@
 import {
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -26,10 +27,10 @@ export class RolesGuard implements CanActivate {
     const user: UserPayload = request.user;
 
     if (!user || user.type === undefined) {
-      throw new ForbiddenException({
-        statusCode: 403,
-        message: 'شما دسترسی لازم برای این بخش را ندارید',
-      });
+      throw new HttpException(
+        'شما دسترسی لازم برای این بخش را ندارید',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     const hasRole = () => requiredRoles.some((role) => user.type === role);
@@ -38,9 +39,9 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    throw new ForbiddenException({
-      statusCode: 403,
-      message: 'شما دسترسی لازم برای این بخش را ندارید',
-    });
+    throw new HttpException(
+      'شما دسترسی لازم برای این بخش را ندارید',
+      HttpStatus.FORBIDDEN,
+    );
   }
 }

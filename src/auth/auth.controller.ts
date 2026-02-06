@@ -29,7 +29,7 @@ export class AuthController {
   @Public()
   @Post('registration')
   @HttpCode(HttpStatus.CREATED)
-  completeRegistration(@Body() completeRegistration: CompleteRegistrationDto) {
-    return this.authService.completeRegistration(completeRegistration);
+  registration(@Body() completeRegistration: CompleteRegistrationDto) {
+    return this.authService.registration(completeRegistration);
   }
 }

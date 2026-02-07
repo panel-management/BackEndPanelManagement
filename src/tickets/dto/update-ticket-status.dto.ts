@@ -3,6 +3,6 @@ import { IsEnum, IsNotEmpty } from 'class-validator';
 
 export class UpdateTicketStatusDto {
   @IsEnum(TicketStatus)
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'وضعیت تیکت الزامی است' })
   status: TicketStatus;
 }

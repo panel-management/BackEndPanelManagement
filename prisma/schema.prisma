@@ -13,11 +13,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Active {
-  ENABLE
-  DISABLE
-}
-
 // start enums for attendance
 
 enum AttendanceStatus {
@@ -98,8 +93,10 @@ model users {
   codeRequestedAt        DateTime?
   type                   Int          @default(1)
   // Personal Information
-  address                String?      @db.Text
   nationalCode           String?      @unique
+  address                String?      @db.Text
+  history                String?      @db.Text
+  certificates           String?
   age                    Int?
   birthDate              DateTime?
   image                  String?
@@ -107,19 +104,19 @@ model users {
   phoneNumberEmergency   String?
   underSupervisionDoctor Boolean?     @default(false)
   diseaseRecords         Boolean?     @default(false)
-  // Club Specific Info
-  sportId                Int?
-  sport                  Sport?       @relation(fields: [sportId], references: [id])
-  achievedBelts          Belt[]       @relation("UserAchievedBelts")
-  history                String?      @db.Text
-  certificates           String?
+  // Club Profile Info
+  clubProfile            ClubProfile?
   // student master
   masterId               Int?
   master                 users?       @relation("MasterToStudents", fields: [masterId], references: [user_id])
   students               users[]      @relation("MasterToStudents")
+  // sport
+  sportId                Int?
+  sport                  Sport?       @relation(fields: [sportId], references: [id])
   // belt
   currentBeltId          Int?
   currentBelt            Belt?        @relation("UserCurrentBelt", fields: [currentBeltId], references: [id])
+  achievedBelts          Belt[]       @relation("UserAchievedBelts")
   //attendance
   studentAttendances     Attendance[] @relation("StudentAttendances")
   MarkedAttendances      Attendance[] @relation("MarkedAttendances")
@@ -142,10 +139,8 @@ model users {
   // Relations for Support Tickets
   tickets          Ticket[]        @relation("UserTickets")
   sentMessages     TicketMessage[] @relation("UserSentMessages")
-  // Club Profile Info
-  clubProfile      ClubProfile?
   // System Fields
-  active           Active          @default(ENABLE)
+  isActive         Boolean         @default(true)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -153,12 +148,10 @@ model users {
 }
 
 model Belt {
-  id                   Int      @id @unique @default(autoincrement())
-  color                String   @unique
-  achievedByUsers      users[]  @relation("UserAchievedBelts")
-  currentlyHeldByUsers users[]  @relation("UserCurrentBelt")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                   Int     @id @unique @default(autoincrement())
+  color                String  @unique
+  achievedByUsers      users[] @relation("UserAchievedBelts")
+  currentlyHeldByUsers users[] @relation("UserCurrentBelt")
 }
 
 model Sport {
@@ -276,7 +269,7 @@ model SubscriptionPayment {
 // model ticket
 
 model Ticket {
-  id    BigInt @id @unique @default(autoincrement())
+  id    String @id @unique @default(uuid())
   title String
 
   category TicketCategory @default(GENERAL)
@@ -293,11 +286,11 @@ model Ticket {
 }
 
 model TicketMessage {
-  id        BigInt   @id @unique @default(autoincrement())
+  id        Int      @id @unique @default(autoincrement())
   text      String   @db.Text
   createdAt DateTime @default(now())
 
-  ticketId BigInt
+  ticketId String
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   senderId Int

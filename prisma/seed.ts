@@ -1,4 +1,4 @@
-import { Active, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { Role } from '../src/auth/enums/role.enum';
 
 const prisma = new PrismaClient();
@@ -27,11 +27,10 @@ async function main() {
     { name: 'کیک بوکسینگ', hasBeltSystem: false },
     { name: 'شمشیربازی', hasBeltSystem: false },
     { name: 'پانکریشن', hasBeltSystem: false },
-    { name: 'MMA', hasBeltSystem: false },
     { name: 'سیستم‌آ', hasBeltSystem: false },
+    { name: 'باشگاه عمومی', hasBeltSystem: false },
+    { name: 'MMA', hasBeltSystem: false },
   ];
-
-  console.log(`number ${sportsToSeed.length} sport was found to be added.`);
 
   for (const sportData of sportsToSeed) {
     await prisma.sport.upsert({
@@ -74,7 +73,6 @@ async function main() {
 
   const adminPhoneNumber = process.env.ADMIN_PHONE_NUMBER!;
   const adminNationalCode = process.env.ADMIN_NATIONAL_CODE!;
-  const now = new Date();
 
   if (!adminPhoneNumber || !adminNationalCode) {
     throw new Error(
@@ -90,9 +88,6 @@ async function main() {
       fullName: 'ادمین',
       nationalCode: adminNationalCode,
       type: Role.Admin,
-      active: Active.ENABLE,
-      createdAt: now,
-      updatedAt: now,
     },
   });
 

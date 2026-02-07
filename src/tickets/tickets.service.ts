@@ -306,7 +306,7 @@ export class TicketsService {
       },
     });
 
-    if (findTicket.user.type === Role.Master && findTicket.user.phoneNumber) {
+    if (findTicket.user.type === Role.Admin && findTicket.user.phoneNumber) {
       await this.smsService.sendMessageToUser(
         findTicket.user.phoneNumber,
         `مدیر محترم، جناب آقای ${findTicket.user.fullName}

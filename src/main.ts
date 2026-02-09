@@ -9,24 +9,25 @@ import { LoggerService } from './common/logger/logger.service';
 import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: false,
-  });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const isProd = process.env.NODE_ENV === 'production';
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: isProd ? undefined : false,
+      crossOriginEmbedderPolicy: isProd,
+      crossOriginResourcePolicy: {
+        policy: 'cross-origin',
+      },
+    }),
+  );
 
   app.use(compression());
 
   app.enableCors({
-    origin: 'http://localhost:3000',
-    methods: 'GET,POST,PUT,DELETE',
+    origin: process.env.CORS_ORIGIN,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
-  });
-
-  app.use('/uploads', (req, res, next) => {
-    res.removeHeader('Cross-Origin-Resource-Policy');
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    next();
   });
 
   app.setGlobalPrefix('api');

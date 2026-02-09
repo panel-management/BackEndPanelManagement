@@ -2,48 +2,53 @@ import { ConsoleLogger, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class LoggerService extends ConsoleLogger {
-  error(message: any, stack?: string, context?: string) {
-    super.error(message, stack, context);
-    this.sendToTelegram(message, stack, context);
+  log(message: any, context?: string) {
+    super.log(message, context);
+    const systemContexts = [
+      'InstanceLoader',
+      'RoutesResolver',
+      'RouterExplorer',
+      'NestFactory',
+      'NestApplication'
+    ];
+    if (context && !systemContexts.includes(context)) {
+      this.sendToTelegram(message, context, 'INFO');
+    }
   }
 
-  private async sendToTelegram(message: any, stack?: string, context?: string) {
+  error(message: any, stack?: string, context?: string) {
+    super.error(message, stack, context);
+    this.sendToTelegram(message, context, 'ERROR', stack);
+  }
+
+  private async sendToTelegram(message: any, context?: string, type: 'INFO' | 'ERROR' = 'ERROR', stack?: string) {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
 
-    if (!botToken || !chatId) {
-      console.log('Telegram bot token or chat ID is not configured.');
-      return;
+    if (!botToken || !chatId) return;
+
+    const isError = type === 'ERROR';
+    const emoji = isError ? '🚨' : '🔔';
+    const title = isError ? `Error in ${context || 'App'}` : `Info from ${context || 'App'}`;
+
+    let formattedMessage = `${emoji} **${title}** ${emoji}\n\n`;
+    formattedMessage += `**Message:**\n\`${message}\`\n`;
+
+    if (isError && stack) {
+      formattedMessage += `\n**Stack Trace:**\n\`\`\`\n${stack}\n\`\`\``;
     }
 
-    const formattedMessage = `
-🚨 **An Error Occurred in ${context || 'Application'}** 🚨
-
-**Message:**
-\`\`\`
-${message}
-\`\`\`
-
-**Stack Trace:**
-\`\`\`
-${stack || 'No stack trace available.'}
-\`\`\`
-    `;
-
     const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-    const payload = {
-      chat_id: chatId,
-      text: formattedMessage,
-      parse_mode: 'Markdown',
-    };
 
     try {
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: formattedMessage,
+          parse_mode: 'Markdown',
+        }),
       });
 
       if (!response.ok) {
@@ -52,12 +57,8 @@ ${stack || 'No stack trace available.'}
           `Telegram API Error: ${response.status} ${response.statusText} - ${errorBody}`,
         );
       }
-    } catch (error) {
-      super.error(
-        'Failed to send log to Telegram',
-        error.stack,
-        'LoggerService',
-      );
+    } catch (e) {
+      console.log(`Failed to send Telegram notification: ${e.message}`);
     }
   }
 }

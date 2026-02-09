@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Get,
   HttpCode,
   HttpStatus,
@@ -16,19 +15,15 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/auth/enums/role.enum';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { AttendanceService } from './attendance.service';
-import {
-  GetReportDto,
-  GetStudentHistoryDto,
-  MarkAttendanceDto,
-  PaginationDto,
-} from './dto/create-attendance.dto';
+import { GetReportDto, GetStudentHistoryDto, MarkAttendanceDto } from './dto/create-attendance.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
 
 @Controller('attendance')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.Master)
 export class AttendanceController {
-  constructor(private readonly attendanceService: AttendanceService) {}
+  constructor(private readonly attendanceService: AttendanceService) { }
 
   @Post('/mark')
   @HttpCode(HttpStatus.CREATED)
@@ -41,10 +36,10 @@ export class AttendanceController {
 
   @Get('/list')
   @HttpCode(HttpStatus.OK)
-  getAttendanceList(@Req() req, @Query() paginationDto: PaginationDto) {
+  getAttendanceList(@Req() req, @Query() pageQueryDto: PaginationQueryDto) {
     return this.attendanceService.getAttendanceListForDate(
       req.user.userId,
-      paginationDto,
+      pageQueryDto,
     );
   }
 

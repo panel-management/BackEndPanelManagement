@@ -2,20 +2,21 @@ import {
   IsEnum,
   IsArray,
   ValidateNested,
-  IsNumber,
   IsString,
   IsOptional,
-  Min,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AttendanceStatus } from '@prisma/client';
+import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
 
 export class MarkAttendanceItemDto {
-  @IsNumber()
+  @IsInt()
+  @Type(() => Number)
   studentId: number;
 
-  @IsEnum(AttendanceStatus)
   @IsOptional()
+  @IsEnum(AttendanceStatus)
   status: AttendanceStatus;
 }
 
@@ -32,31 +33,9 @@ export class GetStudentHistoryDto {
   period: 'week' | 'month' | 'all';
 }
 
-export class GetReportDto {
+export class GetReportDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   @IsEnum(['today', 'week', 'month'])
   period?: 'today' | 'week' | 'month';
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  page?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  limit?: number;
-}
-
-export class PaginationDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  page?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  limit?: number;
 }

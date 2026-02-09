@@ -1,40 +1,92 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import {
-  GetReportDto,
-  GetStudentHistoryDto,
-  MarkAttendanceDto,
-  PaginationDto,
-} from './dto/create-attendance.dto';
+import { GetReportDto, GetStudentHistoryDto, MarkAttendanceDto } from './dto/create-attendance.dto';
 import { Cron } from '@nestjs/schedule';
 import { AttendanceStatus } from '@prisma/client';
 import { Role } from 'src/auth/enums/role.enum';
+import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class AttendanceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private getStartOfTodayUTC(): Date {
     const now = new Date();
     return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   }
 
+  private readonly logger = new Logger(AttendanceService.name);
+
+  // cron job persnt or absent users befor new day
+  @Cron('59 23 * * *', { timeZone: 'Asia/Tehran' })
+  async handleDailyAbsenceMarking() {
+    this.logger.log(`شروع عملیات بررسی حضور و غیاب ناقص...`);
+    const today = this.getStartOfTodayUTC();
+
+    const activeMastersToday = await this.prisma.attendance.findMany({
+      where: { date: today },
+      distinct: ['markedById'],
+      select: { markedById: true },
+    });
+
+    if (activeMastersToday.length === 0) {
+      this.logger.log('هیچ استادی امروز حضور و غیاب انجام نداده است. عملیات متوقف شد.');
+      return;
+    }
+
+    const activeMasterIds = activeMastersToday.map(m => m.markedById);
+
+    const subordinatesOfActiveMasters = await this.prisma.users.findMany({
+      where: {
+        masterId: { in: activeMasterIds },
+        type: { in: [Role.Coach, Role.Student] },
+        isActive: true,
+      },
+      select: { user_id: true, masterId: true },
+    });
+
+    const existingAttendances = await this.prisma.attendance.findMany({
+      where: { date: today },
+      select: { studentId: true },
+    });
+
+    const markedUserIds = new Set(existingAttendances.map((a) => a.studentId));
+
+    const missedUsers = subordinatesOfActiveMasters.filter(
+      (user) => !markedUserIds.has(user.user_id),
+    );
+
+    if (missedUsers.length === 0) {
+      this.logger.log('تمام شاگردانِ اساتید فعال، تعیین تکلیف شده بودند.');
+      return;
+    }
+
+    const finalData = missedUsers.map((user) => ({
+      date: today,
+      status: AttendanceStatus.ABSENT,
+      studentId: user.user_id,
+      markedById: user.masterId!,
+    }));
+
+    await this.prisma.attendance.createMany({
+      data: finalData,
+      skipDuplicates: true,
+    });
+
+    this.logger.log(`تعداد ${finalData.length} نفر که توسط اساتید فراموش شده بودند، غایب زده شدند.`);
+  }
+
+  // presnt and absent for stduent and coach
   async markAttendance(masterId: number, dto: MarkAttendanceDto) {
     const { attendances } = dto;
     const date = this.getStartOfTodayUTC();
 
     if (!masterId || isNaN(masterId)) {
-      throw new BadRequestException({
-        statusCode: 400,
-        message: 'شناسه مربی نامعتبر یا نامعتبر شده است',
-      });
+      throw new HttpException('شناسه مربی نامعتبر یا نامعتبر شده است', HttpStatus.BAD_REQUEST)
     }
 
-    const transactionPromises = attendances.map((att) =>
+    await this.prisma.$transaction(attendances.map((att) =>
       this.prisma.attendance.upsert({
         where: {
           date_studentId: {
@@ -50,42 +102,36 @@ export class AttendanceService {
           markedBy: { connect: { user_id: masterId } },
         },
       }),
-    );
+    ))
 
-    await this.prisma.$transaction(transactionPromises);
-    return { statusCode: 201, message: 'حضور غیاب با موفقیت ثبت شد' };
+    return { statusCode: HttpStatus.OK, message: 'حضور غیاب با موفقیت ثبت شد' };
   }
 
-  async getAttendanceListForDate(
-    masterId: number,
-    paginationDto: PaginationDto,
-  ) {
-    const { page = 1, limit = 10 } = paginationDto;
+  // get list stduent and coach for presnt and absent
+  async getAttendanceListForDate(masterId: number, pageQueryDto: PaginationQueryDto) {
+    const { page = 1, limit = 10 } = pageQueryDto;
     const skip = (page - 1) * limit;
     const targetDate = this.getStartOfTodayUTC();
 
-    const totalUsers = await this.prisma.users.count({
-      where: {
-        masterId: masterId,
-        type: { in: [Role.Coach, Role.Student] },
-      },
-    });
-
-    const users = await this.prisma.users.findMany({
-      skip: skip,
-      take: limit,
-      where: {
-        masterId: masterId,
-        type: { in: [Role.Coach, Role.Student] },
-      },
-      select: { user_id: true, fullName: true, currentBelt: true, type: true },
-    });
+    const [totalUsers, users] = await this.prisma.$transaction([
+      this.prisma.users.count({
+        where: { masterId, type: { in: [Role.Coach, Role.Student] } },
+      }),
+      this.prisma.users.findMany({
+        where: { masterId, type: { in: [Role.Coach, Role.Student] } },
+        select: {
+          user_id: true,
+          fullName: true,
+          currentBelt: true,
+          type: true,
+        },
+        skip,
+        take: limit,
+      }),
+    ])
 
     if (users.length === 0) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'هیچ کاربری برای این استاد یافت نشد',
-      });
+      throw new HttpException('هیچ کاربری برای این استاد یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     const userIds = users.map((u) => u.user_id);
@@ -101,18 +147,17 @@ export class AttendanceService {
       const attendanceRecord = existingAttendances.find(
         (att) => att.studentId === user.user_id,
       );
-      const roles = user.type === Role.Coach ? 'مربی' : 'هنرجو';
       return {
         userId: user.user_id,
         fullName: user.fullName,
-        role: roles,
+        role: user.type === Role.Coach ? 'مربی' : 'هنرجو',
         status: attendanceRecord ? attendanceRecord.status : null,
-        belt: user.currentBelt?.color,
+        belt: user.currentBelt?.color || 'بدون کمربند',
       };
     });
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: 'لیست کاربران با موفقیت دریافت شد',
       data: attendanceList,
       pagination: {
@@ -124,6 +169,7 @@ export class AttendanceService {
     };
   }
 
+  // get report for all class club
   async getAttendanceReportFull(masterId: number, dto: GetReportDto) {
     const { period, page = 1, limit = 10 } = dto;
     const now = new Date();
@@ -141,62 +187,63 @@ export class AttendanceService {
           const dayOfWeek = now.getDay();
           const daysToSubtract = (dayOfWeek + 1) % 7;
           now.setDate(now.getDate() - daysToSubtract);
-          startDate = new Date(
-            Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
-          );
+          startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
           break;
         case 'month':
           name = 'این ماه';
           startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
           break;
-        default:
-          throw new BadRequestException({
-            statusCode: 400,
-            message: 'بازه زمانی نامعتبر است',
-          });
       }
     }
 
     const where = {
       markedById: masterId,
-      date: startDate ? { gte: startDate, lte: new Date() } : undefined,
+      ...(startDate && { date: { gte: startDate, lte: new Date() } }),
     };
 
-    const total = await this.prisma.attendance.count({ where });
+    const [total, report, groupStats, sessionData] = await this.prisma.$transaction([
+      this.prisma.attendance.count({ where }),
+      this.prisma.attendance.findMany({
+        where,
+        select: {
+          id: true,
+          status: true,
+          date: true,
+          createdAt: true,
+          student: { select: { fullName: true } },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { date: 'desc' },
+      }),
+      this.prisma.attendance.groupBy({
+        where,
+        by: ['status'],
+        _count: { status: true },
+        orderBy: { status: 'desc' },
+      }),
+      this.prisma.attendance.findMany({
+        where,
+        distinct: ['date'],
+        select: { date: true },
+        orderBy: { status: 'desc' },
+      })
+    ])
 
-    // لیست paginated برای report
-    const report = await this.prisma.attendance.findMany({
-      where,
-      select: {
-        id: true,
-        status: true,
-        date: true,
-        createdAt: true,
-        student: { select: { fullName: true } },
-      },
-      orderBy: { date: 'desc' },
-      skip: (page - 1) * limit,
-      take: limit,
+    const summary: Record<AttendanceStatus, number> = {
+      PRESENT: 0,
+      ABSENT: 0,
+      LATE: 0,
+      EXCUSED: 0
+    };
+
+    groupStats.forEach((stat) => {
+      if (stat.status && stat.status in summary) {
+        summary[stat.status] = (stat._count as any).status;
+      }
     });
 
-    // لیست کامل (بدون pagination) برای summary و sessions - ثابت بماند
-    const fullReport = await this.prisma.attendance.findMany({
-      where,
-      select: {
-        status: true,
-        date: true,
-      },
-      orderBy: { date: 'desc' },
-    });
-
-    const summary = { PRESENT: 0, ABSENT: 0, LATE: 0, EXCUSED: 0 };
-    for (const r of fullReport) {
-      if (r.status && summary.hasOwnProperty(r.status)) summary[r.status]++;
-    }
-
-    const sessionDates = Array.from(
-      new Set(fullReport.map((r) => r.date.toISOString())),
-    );
+    const sessionDates = sessionData.map(s => s.date.toISOString());
 
     const sessions = {
       totalSessions: sessionDates.length,
@@ -204,7 +251,7 @@ export class AttendanceService {
     };
 
     return {
-      statusCode: 200,
+      statusCode: HttpStatus.OK,
       message: `گزارش ${name} با موفقیت دریافت شد`,
       data: {
         report,
@@ -220,304 +267,53 @@ export class AttendanceService {
     };
   }
 
+  // get history presnt or absent for stduent
   async getStudentHistory(studentId: number, dto: GetStudentHistoryDto) {
     const { period } = dto;
-    let startDate: Date | undefined;
     const now = new Date();
+    let startDate: Date | undefined;
 
     switch (period) {
-      case 'all':
-        startDate = undefined;
-        break;
       case 'week':
         const dayOfWeek = now.getDay();
         const daysToSubtract = (dayOfWeek + 1) % 7;
         now.setDate(now.getDate() - daysToSubtract);
-        startDate = new Date(
-          Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
-        );
+        startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
         break;
       case 'month':
         startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
         break;
+      case 'all':
       default:
-        throw new BadRequestException({
-          statusCode: 400,
-          message: 'هیچ بازه زمانی برای این هنرجو یافت نشد',
-        });
+        startDate = undefined;
+        break;
+    }
+
+    const whereClause: any = {
+      studentId: studentId,
+    };
+
+    if (startDate) {
+      whereClause.date = { gte: startDate };
     }
 
     const history = await this.prisma.attendance.findMany({
-      where: {
-        studentId: studentId,
-        date: {
-          gte: startDate,
-        },
+      where: whereClause,
+      select: {
+        date: true,
+        status: true,
       },
       orderBy: {
         date: 'desc',
       },
     });
 
-    if (history.length === 0) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'هیچ تاریخچه حضور و غیابی برای این کاربر یافت نشد',
-      });
-    }
-
     return {
-      statusCode: 200,
-      message: 'اطلاعات حضور غیاب این کاربر با موفقیت دریافت شد',
+      statusCode: HttpStatus.OK,
+      message: history.length > 0
+        ? 'تاریخچه حضور و غیاب دریافت شد'
+        : 'هیچ سابقه‌ای در این بازه زمانی یافت نشد',
       data: history,
     };
-  }
-
-  // async getAttendanceReportWithSummary(masterId: number, dto: GetReportDto) {
-  //   const { period } = dto;
-  //   const now = new Date();
-  //   let startDate: Date | undefined;
-  //   let name: string = 'همه';
-
-  //   if (period) {
-  //     switch (period) {
-  //       case 'today':
-  //         name = 'امروز';
-  //         startDate = this.getStartOfTodayUTC();
-  //         break;
-  //       case 'week':
-  //         name = 'این هفته';
-  //         const dayOfWeek = now.getDay();
-  //         const daysToSubtract = (dayOfWeek + 1) % 7;
-  //         now.setDate(now.getDate() - daysToSubtract);
-  //         startDate = new Date(
-  //           Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
-  //         );
-  //         break;
-  //       case 'month':
-  //         name = 'این ماه';
-  //         startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-  //         break;
-  //     }
-  //   }
-
-  //   const getReport = await this.prisma.attendance.findMany({
-  //     where: {
-  //       markedById: masterId,
-  //       date: startDate ? { gte: startDate, lte: new Date() } : undefined,
-  //     },
-  //     include: { student: { select: { fullName: true, phoneNumber: true } } },
-  //     orderBy: { date: 'desc' },
-  //   });
-
-  //   const summary = { PRESENT: 0, ABSENT: 0, LATE: 0, EXCUSED: 0 };
-  //   for (const record of getReport) {
-  //     if (record.status && summary.hasOwnProperty(record.status))
-  //       summary[record.status]++;
-  //   }
-
-  //   return {
-  //     statusCode: 200,
-  //     message: `گزارش ${name} با موفقیت دریافت شد`,
-  //     data: {
-  //       summary,
-  //       report: getReport,
-  //     },
-  //   };
-  // }
-
-  // async getAttendanceReport(masterId: number, dto: GetReportDto) {
-  //   const { period } = dto;
-  //   const now = new Date();
-  //   let startDate: Date | undefined;
-  //   let name: string = 'همه';
-
-  //   if (period) {
-  //     switch (period) {
-  //       case 'today':
-  //         name = 'امروز';
-  //         startDate = this.getStartOfTodayUTC();
-  //         break;
-  //       case 'week':
-  //         name = 'این هفته';
-  //         const dayOfWeek = now.getDay();
-  //         const daysToSubtract = (dayOfWeek + 1) % 7;
-  //         now.setDate(now.getDate() - daysToSubtract);
-  //         startDate = new Date(
-  //           Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
-  //         );
-  //         break;
-  //       case 'month':
-  //         name = 'این ماه';
-  //         startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-  //         break;
-  //     }
-  //   }
-
-  //   const getReport = await this.prisma.attendance.findMany({
-  //     where: {
-  //       markedById: masterId,
-  //       date: startDate ? { gte: startDate, lte: new Date() } : undefined,
-  //     },
-  //     include: { student: { select: { fullName: true, phoneNumber: true } } },
-  //     orderBy: { date: 'desc' },
-  //   });
-
-  //   return {
-  //     statusCode: 200,
-  //     message: `گزارش ${name} با موفقیت دریافت شد`,
-  //     data: getReport,
-  //   };
-  // }
-
-  // async getAttendanceSummary(masterId: number, dto: GetReportDto) {
-  //   const { period } = dto;
-  //   const now = new Date();
-  //   let startDate: Date;
-  //   let name: string;
-
-  //   switch (period) {
-  //     case 'today':
-  //       name = 'امروز';
-  //       startDate = this.getStartOfTodayUTC();
-  //       break;
-  //     case 'week':
-  //       name = 'این هفته';
-  //       const dayOfWeek = now.getDay();
-  //       const daysToSubtract = (dayOfWeek + 1) % 7;
-  //       now.setDate(now.getDate() - daysToSubtract);
-  //       startDate = new Date(
-  //         Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
-  //       );
-  //       break;
-  //     case 'month':
-  //       name = 'این ماه';
-  //       startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-  //       break;
-  //     default:
-  //       throw new BadRequestException({
-  //         statusCode: 400,
-  //         message: 'بازه زمانی نامعتبر است',
-  //       });
-  //   }
-
-  //   const records = await this.prisma.attendance.findMany({
-  //     where: {
-  //       markedById: masterId,
-  //       date: {
-  //         gte: startDate,
-  //         lte: new Date(),
-  //       },
-  //     },
-  //     select: {
-  //       status: true,
-  //     },
-  //   });
-
-  //   const summary = {
-  //     PRESENT: 0,
-  //     ABSENT: 0,
-  //     LATE: 0,
-  //     EXCUSED: 0,
-  //   };
-
-  //   for (const record of records) {
-  //     if (record.status && summary.hasOwnProperty(record.status)) {
-  //       summary[record.status]++;
-  //     }
-  //   }
-
-  //   return {
-  //     statusCode: 200,
-  //     message: `گزارش ${name} با موفقیت دریافت شد`,
-  //     data: summary,
-  //   };
-  // }
-
-  // async getAllSessions(masterId: number) {
-  //   const sessions = await this.prisma.attendance.findMany({
-  //     where: { markedById: masterId },
-  //     distinct: ['date'],
-  //     select: {
-  //       date: true,
-  //     },
-  //     orderBy: { date: 'asc' },
-  //   });
-
-  //   if (sessions.length === 0) {
-  //     throw new NotFoundException({
-  //       statusCode: 404,
-  //       message: 'هیچ جلسه حضور غیاب یافت نشد',
-  //     });
-  //   }
-
-  //   const sessionDates = sessions.map((session) => session.date);
-
-  //   return {
-  //     statusCode: 200,
-  //     message: 'جلسات با موفقیت در یافت شد',
-  //     data: {
-  //       totalSessions: sessionDates.length,
-  //       sessions: sessionDates,
-  //     },
-  //   };
-  // }
-
-  @Cron('59 23 * * *')
-  async handleDailyAbsenceMarking() {
-    console.log(`Running daily absence marking job at ${new Date()}`);
-    const today = this.getStartOfTodayUTC();
-
-    const allSubordinates = await this.prisma.users.findMany({
-      where: {
-        masterId: {
-          not: null,
-        },
-        type: {
-          in: [Role.Coach, Role.Student],
-        },
-      },
-      select: { user_id: true, masterId: true },
-    });
-
-    const markedAttendances = await this.prisma.attendance.findMany({
-      where: { date: today },
-      select: { studentId: true },
-    });
-    const markedUserIds = new Set(markedAttendances.map((a) => a.studentId));
-
-    const unmarkedUsers = allSubordinates.filter(
-      (user) => !markedUserIds.has(user.user_id),
-    );
-
-    if (unmarkedUsers.length === 0) {
-      console.log(
-        'All coaches and students have been marked for today. No action needed.',
-      );
-      return;
-    }
-
-    const validUnmarkedUsers = unmarkedUsers.filter(
-      (user) => user.masterId !== null,
-    );
-
-    const absenceCreationData = validUnmarkedUsers.map((user) => {
-      return {
-        date: today,
-        status: AttendanceStatus.ABSENT,
-        studentId: user.user_id,
-        markedById: user.masterId!,
-      };
-    });
-
-    if (absenceCreationData.length > 0) {
-      await this.prisma.attendance.createMany({
-        data: absenceCreationData,
-        skipDuplicates: true,
-      });
-      console.log(
-        `Marked ${absenceCreationData.length} users as ABSENT for ${today.toDateString()}`,
-      );
-    }
   }
 }

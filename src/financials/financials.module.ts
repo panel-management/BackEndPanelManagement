@@ -1,16 +1,14 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { FinancialsController } from './financials.controller';
 import { FinancialsService } from './financials.service';
-import { SmsServiceModule } from 'src/sms-service/sms-service.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { UserModule } from 'src/users/user/user.module';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
-    SmsServiceModule,
-    UserModule,
+    forwardRef(() => UsersModule),
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/receipt',
@@ -32,11 +30,11 @@ import { UserModule } from 'src/users/user/user.module';
         }
         callback(null, true);
       },
-      limits: { fileSize: 1024 * 1024 * 1 },
+      limits: { fileSize: 1024 * 1024 * 2 },
     }),
   ],
   controllers: [FinancialsController],
   providers: [FinancialsService],
   exports: [FinancialsService],
 })
-export class FinancialsModule {}
+export class FinancialsModule { }

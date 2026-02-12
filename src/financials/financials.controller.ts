@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
@@ -32,6 +31,7 @@ import { Request } from 'express';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { RejectPaymentDto } from './dto/reject-payment.dto';
+import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -44,7 +44,7 @@ interface RequestWithUser extends Request {
 @Controller('financials')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class FinancialsController {
-  constructor(private readonly financialsService: FinancialsService) {}
+  constructor(private readonly financialsService: FinancialsService) { }
 
   // Create plan design payment
   @Post('plans')
@@ -85,9 +85,8 @@ export class FinancialsController {
   @Delete('plans/:id')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  deletePlanStudent(@Param('id', ParseIntPipe) id: number) {
-    return this.financialsService.deletePlanStudent(id);
+  deletePlanStudent(@Req() req, @Param('id', ParseIntPipe) id: number) {
+    return this.financialsService.deletePlanStudent(id, req.user.userId);
   }
 
   // Register equipment transaction
@@ -135,40 +134,24 @@ export class FinancialsController {
   @Get('transactions/master/history')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  getMyTransactions(
-    @Req() req,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-  ) {
-    return this.financialsService.getMasterTransactions(
-      req.user.userId,
-      page,
-      limit,
-    );
+  getMyTransactions(@Req() req, @Query() pageQueryDto: PaginationQueryDto) {
+    return this.financialsService.getMasterTransactions(req.user.userId, pageQueryDto);
   }
 
   // Transactions student history
   @Get('transactions/student/history')
   @Roles(Role.Student)
   @HttpCode(HttpStatus.OK)
-  getStudentTransactions(
-    @Req() req,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-  ) {
-    return this.financialsService.getStudentTransactions(
-      req.user.userId,
-      page,
-      limit,
-    );
+  getStudentTransactions(@Req() req, @Query() pageQueryDto: PaginationQueryDto) {
+    return this.financialsService.getStudentTransactions(req.user.userId, pageQueryDto);
   }
 
   // Returns the financial dashboard and debtor list for master
   @Get('dashboard/master')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  getMasterDashboard() {
-    return this.financialsService.getMasterDashboard();
+  getMasterDashboard(@Req() req) {
+    return this.financialsService.getMasterDashboard(req.user.userId);
   }
 
   // Returns the financial dashboard and debtor list for admin
@@ -267,7 +250,6 @@ export class FinancialsController {
   @Delete('master-plans/:id')
   @Roles(Role.Admin)
   @HttpCode(HttpStatus.OK)
-  @HttpCode(HttpStatus.NO_CONTENT)
   deleteMasterPlan(@Param('id', ParseIntPipe) id: number) {
     return this.financialsService.deleteMasterPlan(id);
   }

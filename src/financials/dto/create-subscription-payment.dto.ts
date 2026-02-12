@@ -1,25 +1,21 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
+import { IsDate, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateSubscriptionPaymentDto {
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  amount: number;
-
   @IsDate()
+  @IsNotEmpty({ message: 'زمان پرداخت الزامی است' })
   @Type(() => Date)
   paymentDate: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'شماره کارت الزامی است' })
   trackingNumber: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'نام پرداخت کننده الزامی است' })
   payerFullName: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'نام بانک الزامی است' })
   bankName: string;
 }

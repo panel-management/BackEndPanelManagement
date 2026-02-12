@@ -1,7 +1,9 @@
-import { IsDateString, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsDate, IsOptional } from 'class-validator';
 
 export class ConfirmPaymentDto {
-  @IsDateString()
+  @IsDate()
   @IsOptional()
+  @Type(() => Date)
   paymentDate?: Date;
 }

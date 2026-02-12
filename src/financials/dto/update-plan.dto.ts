@@ -3,20 +3,20 @@ import { IsInt, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
 
 export class UpdatePlanDto {
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'نام پلن الزامی است' })
   name: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'توضیحات پلن الزامی است' })
   description: string;
 
-  @Type(() => Number)
   @IsNumber()
+  @Type(() => Number)
   @Min(0)
   price: number;
 
-  @Type(() => Number)
   @IsInt()
+  @Type(() => Number)
   @Min(1)
   durationInDays: number;
 }

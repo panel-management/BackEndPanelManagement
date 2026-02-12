@@ -4,6 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserPayload } from './interfaces/user-payload.interface';
 import { AuthService } from './auth.service';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -22,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any): Promise<UserPayload> {
+  async validate(payload: JwtPayload): Promise<UserPayload> {
     const user = await this.auth.validateUserById(payload.sub);
     if (!user) {
       throw new HttpException('کاربر مورد نظر یافت نشد یا حذف شده است', HttpStatus.UNAUTHORIZED);

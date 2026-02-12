@@ -19,7 +19,7 @@ export class AuthService {
   private checkOtpExpiration(requestedAt: Date | null) {
     if (!requestedAt) throw new HttpException('کد تایید یافت نشد', HttpStatus.UNAUTHORIZED);
     const diffInMinutes = (Date.now() - new Date(requestedAt).getTime()) / 1000 / 60;
-    if (diffInMinutes > 1) {
+    if (diffInMinutes > 2) {
       throw new HttpException('کد تایید منقضی شده است', HttpStatus.UNAUTHORIZED);
     }
   }

@@ -15,8 +15,8 @@ export class UpdateCoachDto {
   @Matches(/^09\d{9}$/, { message: 'فرمت شماره تلفن نامعتبر است' })
   phoneNumber?: string;
 
-  @IsOptional()
   @IsDate()
+  @IsOptional()
   @Type(() => Date)
   birthDate?: Date;
 

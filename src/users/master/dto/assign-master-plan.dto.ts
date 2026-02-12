@@ -3,7 +3,7 @@ import { IsInt, IsNotEmpty } from 'class-validator';
 
 export class AssignMasterPlanDto {
   @IsInt()
-  @IsNotEmpty({ message: 'نمی تواند پلن خالی باشد' })
+  @IsNotEmpty({ message: 'شناسه پلن الزامی است' })
   @Type(() => Number)
   planId: number;
 }

@@ -27,16 +27,16 @@ class SocialNetworksDto {
 }
 
 export class CompleteProfileDto {
-  @IsString({ message: 'نام باشگاه باید از نوع رشته باشد' })
-  @IsNotEmpty({ message: 'نام باشگاه نمی‌ تواند خالی باشد' })
+  @IsString()
+  @IsNotEmpty({ message: 'نام باشگاه الزامی است' })
   clubName: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'حوضه فعالیت الزامی است' })
   activityType: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'ادرس باشگاه الزامی است' })
   clubAddress: string;
 
   @IsString()
@@ -47,8 +47,8 @@ export class CompleteProfileDto {
   @IsOptional()
   clubPhoneNumber?: string;
 
-  @IsOptional()
   @IsDate()
+  @IsOptional()
   @Type(() => Date)
   foundationDate?: Date;
 

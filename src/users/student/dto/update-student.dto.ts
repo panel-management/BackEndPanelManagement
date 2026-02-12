@@ -17,13 +17,13 @@ export class UpdateStudentDto {
   nationalCode?: string;
 
   @IsDate()
-  @Type(() => Date)
   @IsOptional()
+  @Type(() => Date)
   birthDate?: Date;
 
   @IsInt()
-  @Type(() => Number)
   @IsOptional()
+  @Type(() => Number)
   age?: number;
 
   @IsString()

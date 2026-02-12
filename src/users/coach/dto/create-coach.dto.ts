@@ -3,33 +3,33 @@ import { IsDate, IsInt, IsNotEmpty, IsString, Matches } from 'class-validator';
 
 export class CreateCoachDto {
   @IsString()
-  @IsNotEmpty({ message: 'نام کامل نمی‌ تواند خالی باشد' })
+  @IsNotEmpty({ message: 'نام کامل الزامی است' })
   fullName: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'کد ملی نمی‌ تواند خالی باشد' })
+  @IsNotEmpty({ message: 'کد ملی الزامی است' })
   nationalCode: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'شماره تلفن نمی‌ تواند خالی باشد' })
+  @IsNotEmpty({ message: 'شماره تلفن الزامی است' })
   @Matches(/^09\d{9}$/, { message: 'فرمت شماره تلفن نامعتبر است' })
   phoneNumber: string;
 
   @IsInt()
-  @IsNotEmpty({ message: 'سن نمیتواند خالی باشد' })
+  @IsNotEmpty({ message: 'سن الزامی است' })
   @Type(() => Number)
   age: number;
 
   @IsDate()
-  @IsNotEmpty({ message: 'تاریخ تولد نمی تواند خلی باشد' })
+  @IsNotEmpty({ message: 'تاریخ تولد الزامی است' })
   @Type(() => Date)
   birthDate: Date;
 
   @IsString()
-  @IsNotEmpty({ message: 'سابقه تدریس نمی‌ تواند خالی باشد' })
+  @IsNotEmpty({ message: 'سابقه تدریس الزامی است' })
   history: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'مدرک یا گواهینامه نمی‌ تواند خالی باشد' })
+  @IsNotEmpty({ message: 'مدرک یا گواهینامه الزامی است' })
   certificates: string;
 }

@@ -34,8 +34,8 @@ export class GetStudentHistoryDto {
 }
 
 export class GetReportDto extends PaginationQueryDto {
-  @IsOptional()
   @IsString()
+  @IsOptional()
   @IsEnum(['today', 'week', 'month'])
   period?: 'today' | 'week' | 'month';
 }

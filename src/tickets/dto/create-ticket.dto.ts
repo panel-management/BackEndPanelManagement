@@ -2,19 +2,19 @@ import { TicketCategory, TicketPriority } from '@prisma/client';
 import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateTicketDto {
-  @IsString({ message: 'عنوان باید از نوع رشته باشد' })
-  @IsNotEmpty({ message: 'عنوان نمی تواند خالی باشد' })
+  @IsString()
+  @IsNotEmpty({ message: 'عنوان الزامی است' })
   title: string;
 
-  @IsString({ message: 'متن پیام باید از نوع رشته باشد' })
-  @IsNotEmpty({ message: 'متن پیام نمی‌ تواند خالی باشد' })
+  @IsString()
+  @IsNotEmpty({ message: 'متن پیام الزامی است' })
   text: string;
 
   @IsEnum(TicketCategory, { message: 'دسته‌بندی معتبر نیست' })
-  @IsNotEmpty({ message: 'دسته‌بندی نمی‌تواند خالی باشد' })
+  @IsNotEmpty({ message: 'دسته‌بندی الزامی است' })
   category: TicketCategory;
 
   @IsEnum(TicketPriority, { message: 'اولویت معتبر نیست' })
-  @IsNotEmpty({ message: 'اولویت نمی‌تواند خالی باشد' })
+  @IsNotEmpty({ message: 'اولویت الزامی است' })
   priority: TicketPriority;
 }

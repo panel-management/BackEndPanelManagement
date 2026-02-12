@@ -15,13 +15,13 @@ export class UpdateMasterDto {
   @Matches(/^09\d{9}$/, { message: 'فرمت شماره تلفن نامعتبر است' })
   phoneNumber?: string;
 
-  @IsInt({ message: 'سن باید به صورت عدد باشد' })
+  @IsInt()
   @IsOptional()
   @Type(() => Number)
   age?: number;
 
-  @IsOptional()
   @IsDate()
+  @IsOptional()
   @Type(() => Date)
   birthDate?: Date;
 
@@ -33,7 +33,7 @@ export class UpdateMasterDto {
   @IsOptional()
   certificates?: string;
 
-  @IsInt({ message: 'شناسه ورزش باید یک عدد صحیح باشد' })
+  @IsInt()
   @IsOptional()
   @Type(() => Number)
   sportId?: number;

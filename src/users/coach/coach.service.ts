@@ -74,17 +74,11 @@ export class CoachService {
     });
 
     if (getCoach?.type !== Role.Coach) {
-      throw new HttpException(
-        'مربی با این مشخصات یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('مربی با این مشخصات یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     if (!getCoach) {
-      throw new HttpException(
-        'مربی با این مشخصات یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('مربی با این مشخصات یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     return {
@@ -118,17 +112,11 @@ export class CoachService {
     });
 
     if (getCoach?.type !== Role.Coach) {
-      throw new HttpException(
-        'مربی با این مشخصات یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('مربی با این مشخصات یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     if (!getCoach || getCoach.masterId !== masterId) {
-      throw new HttpException(
-        'مربی با این مشخصات یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('مربی با این مشخصات یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     return {
@@ -139,11 +127,7 @@ export class CoachService {
   }
 
   // create coach for master
-  async createCoach(
-    masterId: number,
-    dto: CreateCoachDto,
-    file?: Express.Multer.File,
-  ) {
+  async createCoach(masterId: number, dto: CreateCoachDto, file?: Express.Multer.File) {
     try {
       const master = await this.prisma.users.findUnique({
         where: { user_id: masterId },
@@ -195,22 +179,13 @@ export class CoachService {
         data: newCoach,
       };
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         const target = error.meta?.target as string[];
         if (target?.includes('phoneNumber')) {
-          throw new HttpException(
-            'کاربری با این شماره تلفن از قبل وجود دارد',
-            HttpStatus.CONFLICT,
-          );
+          throw new HttpException('کاربری با این شماره تلفن از قبل وجود دارد', HttpStatus.CONFLICT);
         }
         if (target?.includes('nationalCode')) {
-          throw new HttpException(
-            'کاربری با این کد ملی از قبل وجود دارد',
-            HttpStatus.CONFLICT,
-          );
+          throw new HttpException('کاربری با این کد ملی از قبل وجود دارد', HttpStatus.CONFLICT);
         }
       }
       throw error;

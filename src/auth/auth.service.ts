@@ -17,15 +17,10 @@ export class AuthService {
   ) {}
 
   private checkOtpExpiration(requestedAt: Date | null) {
-    if (!requestedAt)
-      throw new HttpException('کد تایید یافت نشد', HttpStatus.UNAUTHORIZED);
-    const diffInMinutes =
-      (Date.now() - new Date(requestedAt).getTime()) / 1000 / 60;
+    if (!requestedAt) throw new HttpException('کد تایید یافت نشد', HttpStatus.UNAUTHORIZED);
+    const diffInMinutes = (Date.now() - new Date(requestedAt).getTime()) / 1000 / 60;
     if (diffInMinutes > 1) {
-      throw new HttpException(
-        'کد تایید منقضی شده است',
-        HttpStatus.UNAUTHORIZED,
-      );
+      throw new HttpException('کد تایید منقضی شده است', HttpStatus.UNAUTHORIZED);
     }
   }
 
@@ -40,8 +35,7 @@ export class AuthService {
     let user = await this.userService.findByPhoneNumber(phoneNumber);
 
     if (user && user.codeRequestedAt) {
-      const diffInSeconds =
-        (Date.now() - new Date(user.codeRequestedAt).getTime()) / 1000;
+      const diffInSeconds = (Date.now() - new Date(user.codeRequestedAt).getTime()) / 1000;
       if (diffInSeconds < 60) {
         throw new HttpException(
           `لطفا ${Math.ceil(60 - diffInSeconds)} ثانیه دیگر دوباره امتحان کنید`,
@@ -98,10 +92,7 @@ export class AuthService {
     const user = await this.userService.findByPhoneNumber(phoneNumber);
 
     if (!user) {
-      throw new HttpException(
-        'کاربر یافت نشد لطفا ابتدا ثبت‌ نام کنید',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('کاربر یافت نشد لطفا ابتدا ثبت‌ نام کنید', HttpStatus.NOT_FOUND);
     }
 
     this.checkOtpExpiration(user.codeRequestedAt);
@@ -111,10 +102,7 @@ export class AuthService {
     }
 
     if (user.fullName) {
-      throw new HttpException(
-        'این شماره تلفن قبلاً ثبت‌ نام شده است',
-        HttpStatus.CONFLICT,
-      );
+      throw new HttpException('این شماره تلفن قبلاً ثبت‌ نام شده است', HttpStatus.CONFLICT);
     }
 
     const updateUser = await this.userService.updateProfile(user.user_id, {
@@ -134,10 +122,7 @@ export class AuthService {
 ثبت نام شما با موفقیت انجام شد لطف برای استفاده از پنل باشگاه هوشمند اطلاعات خود را تکمیل کنید✅`,
       );
     } catch (error) {
-      console.error(
-        `ارسال پیامک خوش آمدگویی به ${phoneNumber} ناموفق بود:`,
-        error,
-      );
+      console.error(`ارسال پیامک خوش آمدگویی به ${phoneNumber} ناموفق بود:`, error);
     }
 
     const payload = {

@@ -4,6 +4,6 @@ import { SportBeltController } from './sport-belt.controller';
 
 @Module({
   providers: [SportBeltService],
-  controllers: [SportBeltController]
+  controllers: [SportBeltController],
 })
 export class SportBeltModule {}

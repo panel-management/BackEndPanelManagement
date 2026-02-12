@@ -46,10 +46,7 @@ export class SportBeltService {
     });
 
     if (!getBelt || getBelt.id !== id) {
-      throw new HttpException(
-        'کمربندی با این مشخاصت یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('کمربندی با این مشخاصت یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     return {

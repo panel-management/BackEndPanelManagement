@@ -1,11 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsDate,
-  IsInt,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class UpdateStudentDto {
   @IsString()

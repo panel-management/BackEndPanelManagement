@@ -25,7 +25,7 @@ import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
 @Controller('tickets')
 @UseGuards(RolesGuard, JwtAuthGuard)
 export class TicketsController {
-  constructor(private readonly ticketsService: TicketsService) { }
+  constructor(private readonly ticketsService: TicketsService) {}
 
   @Post()
   @Roles(Role.Master)
@@ -63,11 +63,7 @@ export class TicketsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() createTicketMessageDto: CreateTicketMessageDto,
   ) {
-    return this.ticketsService.addMessage(
-      id,
-      createTicketMessageDto,
-      req.user.userId,
-    );
+    return this.ticketsService.addMessage(id, createTicketMessageDto, req.user.userId);
   }
 
   @Put(':id/status')

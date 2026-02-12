@@ -9,7 +9,7 @@ export class LoggerService extends ConsoleLogger {
       'RoutesResolver',
       'RouterExplorer',
       'NestFactory',
-      'NestApplication'
+      'NestApplication',
     ];
     if (context && !systemContexts.includes(context)) {
       this.sendToTelegram(message, context, 'INFO');
@@ -21,7 +21,12 @@ export class LoggerService extends ConsoleLogger {
     this.sendToTelegram(message, context, 'ERROR', stack);
   }
 
-  private async sendToTelegram(message: any, context?: string, type: 'INFO' | 'ERROR' = 'ERROR', stack?: string) {
+  private async sendToTelegram(
+    message: any,
+    context?: string,
+    type: 'INFO' | 'ERROR' = 'ERROR',
+    stack?: string,
+  ) {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
 

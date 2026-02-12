@@ -20,10 +20,7 @@ export class AuthController {
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   verifyOpt(@Body() verifyOtpDto: VerifyOtpDto) {
-    return this.authService.verifyOtp(
-      verifyOtpDto.phoneNumber,
-      verifyOtpDto.code,
-    );
+    return this.authService.verifyOtp(verifyOtpDto.phoneNumber, verifyOtpDto.code);
   }
 
   @Public()

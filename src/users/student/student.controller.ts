@@ -64,10 +64,7 @@ export class StudentController {
   @Roles(Role.Student)
   @HttpCode(HttpStatus.OK)
   updateStudent(@Req() req, @Body() updateStudentDto: UpdateStudentDto) {
-    return this.studentService.updateStudentById(
-      req.user.userId,
-      updateStudentDto,
-    );
+    return this.studentService.updateStudentById(req.user.userId, updateStudentDto);
   }
 
   // Update Student by Master
@@ -79,11 +76,7 @@ export class StudentController {
     @Param('id', ParseIntPipe) studentId: number,
     @Body() updateStudentDto: UpdateStudentDto,
   ) {
-    return this.studentService.updateById(
-      studentId,
-      req.user.userId,
-      updateStudentDto,
-    );
+    return this.studentService.updateById(studentId, req.user.userId, updateStudentDto);
   }
 
   // Delete Student by Master

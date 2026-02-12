@@ -65,11 +65,7 @@ export class MasterController {
     @Body() updateMasterDto: UpdateMasterDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.masterService.updateMaster(
-      req.user.userId,
-      updateMasterDto,
-      file,
-    );
+    return this.masterService.updateMaster(req.user.userId, updateMasterDto, file);
   }
 
   // See All Update Profile Master Just Admin
@@ -94,10 +90,7 @@ export class MasterController {
     @Param('id', ParseIntPipe) masterId: number,
     @Body() updateStatusUserDto: UpdateStatusDto,
   ) {
-    return this.masterService.changeStatusAccount(
-      masterId,
-      updateStatusUserDto,
-    );
+    return this.masterService.changeStatusAccount(masterId, updateStatusUserDto);
   }
 
   // select plan for master just admin
@@ -116,10 +109,7 @@ export class MasterController {
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   selectMyPlan(@Req() req, @Body() assignDto: AssignMasterPlanDto) {
-    return this.masterService.selectPlanHimSelf(
-      req.user.userId,
-      assignDto.planId,
-    );
+    return this.masterService.selectPlanHimSelf(req.user.userId, assignDto.planId);
   }
 
   // delete account master

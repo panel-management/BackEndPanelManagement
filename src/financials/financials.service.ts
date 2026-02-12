@@ -2,7 +2,14 @@ import { forwardRef, HttpException, HttpStatus, Inject, Injectable, Logger } fro
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
-import { MasterPlanType, PaymentMethod, Prisma, SubscriptionPaymentStatus, TransactionStatus, TransactionType } from '@prisma/client';
+import {
+  MasterPlanType,
+  PaymentMethod,
+  Prisma,
+  SubscriptionPaymentStatus,
+  TransactionStatus,
+  TransactionType,
+} from '@prisma/client';
 import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 import { CreateSubscriptionPaymentDto } from './dto/create-subscription-payment.dto';
 import { ReviewSubscriptionPaymentDto } from './dto/review-subscription-payment.dto';
@@ -24,9 +31,9 @@ export class FinancialsService {
     private readonly smsService: SmsService,
     @Inject(forwardRef(() => UsersService))
     private readonly userService: UsersService,
-  ) { }
+  ) {}
 
-  private readonly logger = new Logger(FinancialsService.name)
+  private readonly logger = new Logger(FinancialsService.name);
 
   // Daily cron job to automatically generate renewal fees for expiring subscriptions and notify students.
   @Cron('59 23 * * *', { timeZone: 'Asia/Tehran' })
@@ -53,9 +60,17 @@ export class FinancialsService {
       const planEndsAt = new Date(student.planEndsAt!);
       const daysToEnd = Math.floor((planEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-      const daysSinceLastFee = student.lastFeeGenerated ? Math.floor((now.getTime() - new Date(student.lastFeeGenerated).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+      const daysSinceLastFee = student.lastFeeGenerated
+        ? Math.floor(
+            (now.getTime() - new Date(student.lastFeeGenerated).getTime()) / (1000 * 60 * 60 * 24),
+          )
+        : 0;
 
-      if (student.assignedPlan && daysToEnd <= 7 && daysSinceLastFee >= student.assignedPlan.durationInDays - 7) {
+      if (
+        student.assignedPlan &&
+        daysToEnd <= 7 &&
+        daysSinceLastFee >= student.assignedPlan.durationInDays - 7
+      ) {
         const nextDueDate = new Date(planEndsAt);
         nextDueDate.setDate(nextDueDate.getDate() + student.assignedPlan.durationInDays);
 
@@ -103,9 +118,7 @@ export class FinancialsService {
 مهلت پرداخت: ${formattedDueDate}
 لطفاً برای ادامه دسترسی، پرداخت کنید.`;
 
-          smsPromises.push(
-            this.smsService.sendMessageToUser(student.phoneNumber, message)
-          );
+          smsPromises.push(this.smsService.sendMessageToUser(student.phoneNumber, message));
         }
       }
     }
@@ -136,7 +149,10 @@ export class FinancialsService {
       const planEndsAt = new Date(student.planEndsAt);
       const daysToEnd = Math.floor((planEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-      const reminderDays = Math.min(7, Math.max(1, Math.floor(student.assignedPlan.durationInDays * 0.2)));
+      const reminderDays = Math.min(
+        7,
+        Math.max(1, Math.floor(student.assignedPlan.durationInDays * 0.2)),
+      );
 
       let message = '';
 
@@ -215,7 +231,7 @@ export class FinancialsService {
     }
 
     if (master.type !== Role.Master) {
-      throw new HttpException('فقط استاد می‌تواند پلن ایجاد کند', HttpStatus.FORBIDDEN)
+      throw new HttpException('فقط استاد می‌تواند پلن ایجاد کند', HttpStatus.FORBIDDEN);
     }
 
     const plan = await this.prisma.$transaction(async (tx) => {
@@ -238,7 +254,11 @@ export class FinancialsService {
       });
     });
 
-    return { statusCode: HttpStatus.CREATED, message: 'پلن با موفقیت ایجاد شد', data: plan };
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'پلن با موفقیت ایجاد شد',
+      data: plan,
+    };
   }
 
   // get all plans student for master
@@ -288,11 +308,7 @@ export class FinancialsService {
   }
 
   // update plan student for master
-  async updatePlanStudent(
-    planId: number,
-    masterId: number,
-    updatePlanDto: UpdatePlanDto,
-  ) {
+  async updatePlanStudent(planId: number, masterId: number, updatePlanDto: UpdatePlanDto) {
     const findPlanStudent = await this.findPlanById(planId);
 
     if (!findPlanStudent) {
@@ -381,7 +397,10 @@ export class FinancialsService {
   async createMasterPlan(createDto: CreateMasterPlanDto) {
     if (createDto.type === MasterPlanType.PAID) {
       if (createDto.price === undefined || createDto.price === null || createDto.price <= 0) {
-        throw new HttpException('برای پلن‌های پولی، وارد کردن قیمت الزامی است', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'برای پلن‌های پولی، وارد کردن قیمت الزامی است',
+          HttpStatus.BAD_REQUEST,
+        );
       }
     } else {
       createDto.price = 0;
@@ -421,7 +440,10 @@ export class FinancialsService {
     const newPrice = updateDto.price ?? findPlanMaster.price;
 
     if (newType === MasterPlanType.PAID && (newPrice === null || Number(newPrice) <= 0)) {
-      throw new HttpException('برای پلن‌های پولی، قیمت باید بیشتر از صفر باشد', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'برای پلن‌های پولی، قیمت باید بیشتر از صفر باشد',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     if (newType !== MasterPlanType.PAID && updateDto.type) {
@@ -447,18 +469,24 @@ export class FinancialsService {
     });
 
     if (assignedUsersCount > 0) {
-      throw new HttpException(`امکان حذف این پلن وجود ندارد زیرا ${assignedUsersCount} کاربر در حال حاضر از آن استفاده می‌کنند`, HttpStatus.CONFLICT);
+      throw new HttpException(
+        `امکان حذف این پلن وجود ندارد زیرا ${assignedUsersCount} کاربر در حال حاضر از آن استفاده می‌کنند`,
+        HttpStatus.CONFLICT,
+      );
     }
 
     const pendingPaymentsCount = await this.prisma.subscriptionPayment.count({
       where: {
         planId: planId,
-        status: SubscriptionPaymentStatus.PENDING
+        status: SubscriptionPaymentStatus.PENDING,
       },
     });
 
     if (pendingPaymentsCount > 0) {
-      throw new HttpException(`این پلن دارای ${pendingPaymentsCount} درخواست پرداخت در انتظار تایید است. ابتدا تکلیف پرداخت‌ها را روشن کنید.`, HttpStatus.CONFLICT);
+      throw new HttpException(
+        `این پلن دارای ${pendingPaymentsCount} درخواست پرداخت در انتظار تایید است. ابتدا تکلیف پرداخت‌ها را روشن کنید.`,
+        HttpStatus.CONFLICT,
+      );
     }
 
     const findPlanMaster = await this.findMasterPlanById(planId);
@@ -481,10 +509,7 @@ export class FinancialsService {
   // method finacial for admin and master
 
   // create equipment transaction for student
-  async createEquipmentTransaction(
-    masterId: number,
-    createEquipmentDto: CreateEquipmentDto,
-  ) {
+  async createEquipmentTransaction(masterId: number, createEquipmentDto: CreateEquipmentDto) {
     const student = await this.prisma.users.findUnique({
       where: { user_id: createEquipmentDto.studentId },
     });
@@ -520,9 +545,12 @@ export class FinancialsService {
         day: 'numeric',
       });
 
-      await this.smsService.sendMessageToUser(student.phoneNumber, `هنرجوی عزیز سلام ${student.fullName}
+      await this.smsService.sendMessageToUser(
+        student.phoneNumber,
+        `هنرجوی عزیز سلام ${student.fullName}
 یک هزینه جدید برای ${createTransaction.description} به مبلغ ${formattedAmount} تومان برای شما ثبت شد.
-مهلت پرداخت: ${formattedDueDate}`);
+مهلت پرداخت: ${formattedDueDate}`,
+      );
     }
 
     return {
@@ -612,10 +640,7 @@ export class FinancialsService {
   }
 
   // reject manual payment for student
-  async rejectManualPayment(
-    transactionId: number,
-    rejectDto: RejectPaymentDto,
-  ) {
+  async rejectManualPayment(transactionId: number, rejectDto: RejectPaymentDto) {
     const transaction = await this.prisma.transaction.findUnique({
       where: { id: transactionId },
       include: {
@@ -630,7 +655,10 @@ export class FinancialsService {
     }
 
     if (transaction.status === TransactionStatus.PAID) {
-      throw new HttpException('این تراکنش قبلاً تایید شده و نمی‌توان رد کرد', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'این تراکنش قبلاً تایید شده و نمی‌توان رد کرد',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     await this.prisma.transaction.update({
@@ -646,7 +674,7 @@ export class FinancialsService {
       await this.smsService.sendMessageToUser(
         transaction.student.phoneNumber,
         `سلام ${transaction.student.fullName} عزیز
-پرداخت${transactionType} شما به مبلغ ${Number(transaction.amount).toLocaleString('fa-IR')} تومان رد شد و معتبر نیست. لطفا مجددا اقدام کنید.${reasonText}`
+پرداخت${transactionType} شما به مبلغ ${Number(transaction.amount).toLocaleString('fa-IR')} تومان رد شد و معتبر نیست. لطفا مجددا اقدام کنید.${reasonText}`,
       );
     }
 
@@ -658,7 +686,7 @@ export class FinancialsService {
 
   // get master transactions
   async getMasterTransactions(masterId: number, pageQueryDto: PaginationQueryDto) {
-    const { page = 1, limit = 10 } = pageQueryDto
+    const { page = 1, limit = 10 } = pageQueryDto;
     const skip = (page - 1) * limit;
 
     const whereClause = {
@@ -689,8 +717,8 @@ export class FinancialsService {
         orderBy: { createdAt: 'desc' },
         skip: skip,
         take: limit,
-      })
-    ])
+      }),
+    ]);
 
     const [totalAmount, paidFees, unpaidFees, equipmentIncome] = await Promise.all([
       this.prisma.transaction.aggregate({
@@ -698,15 +726,29 @@ export class FinancialsService {
         _sum: { amount: true },
       }),
       this.prisma.transaction.aggregate({
-        where: { ...whereClause, type: TransactionType.FEE, status: TransactionStatus.PAID },
+        where: {
+          ...whereClause,
+          type: TransactionType.FEE,
+          status: TransactionStatus.PAID,
+        },
         _sum: { amount: true },
       }),
       this.prisma.transaction.aggregate({
-        where: { ...whereClause, type: TransactionType.FEE, status: { in: [TransactionStatus.UNPAID, TransactionStatus.PENDING] } },
+        where: {
+          ...whereClause,
+          type: TransactionType.FEE,
+          status: {
+            in: [TransactionStatus.UNPAID, TransactionStatus.PENDING],
+          },
+        },
         _sum: { amount: true },
       }),
       this.prisma.transaction.aggregate({
-        where: { ...whereClause, type: TransactionType.EQUIPMENT, status: TransactionStatus.PAID },
+        where: {
+          ...whereClause,
+          type: TransactionType.EQUIPMENT,
+          status: TransactionStatus.PAID,
+        },
         _sum: { amount: true },
       }),
     ]);
@@ -734,8 +776,8 @@ export class FinancialsService {
 
   // get student transactions
   async getStudentTransactions(studentId: number, pageQueryDto: PaginationQueryDto) {
-    const { page = 1, limit = 10 } = pageQueryDto
-    const skip = (page - 1) * limit
+    const { page = 1, limit = 10 } = pageQueryDto;
+    const skip = (page - 1) * limit;
 
     const where: Prisma.TransactionWhereInput = {
       studentId: studentId,
@@ -808,7 +850,11 @@ export class FinancialsService {
       // Total income from tuition fees
       // ۲. مجموع درآمد از شهریه‌ها
       this.prisma.transaction.aggregate({
-        where: { ...baseWhere, status: TransactionStatus.PAID, type: TransactionType.FEE },
+        where: {
+          ...baseWhere,
+          status: TransactionStatus.PAID,
+          type: TransactionType.FEE,
+        },
         _sum: { amount: true },
       }),
       // Total revenue from equipment
@@ -931,10 +977,7 @@ export class FinancialsService {
       this.prisma.subscriptionPayment.findMany({
         where: {
           status: {
-            in: [
-              SubscriptionPaymentStatus.CONFIRMED,
-              SubscriptionPaymentStatus.REJECTED,
-            ],
+            in: [SubscriptionPaymentStatus.CONFIRMED, SubscriptionPaymentStatus.REJECTED],
           },
         },
         take: 20,
@@ -999,7 +1042,10 @@ export class FinancialsService {
     const planStatus = await this.userService.getPlanStatus(masterId);
 
     if (planStatus?.isActive) {
-      throw new HttpException('پلن شما در حال حاضر فعال است. نیازی به پرداخت جدید نیست', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'پلن شما در حال حاضر فعال است. نیازی به پرداخت جدید نیست',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     if (planStatus?.isPending) {
@@ -1007,11 +1053,17 @@ export class FinancialsService {
     }
 
     if (planStatus?.isExpired) {
-      throw new HttpException('پلن شما منقضی شده است. لطفاً ابتدا پلن جدیدی انتخاب کنید', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'پلن شما منقضی شده است. لطفاً ابتدا پلن جدیدی انتخاب کنید',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     if (!planStatus?.needsPayment) {
-      throw new HttpException('وضعیت پلن نامعتبر است. لطفاً وضعیت را بررسی کنید', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'وضعیت پلن نامعتبر است. لطفاً وضعیت را بررسی کنید',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const imageUrl = fileUtils.createImageUrl(file.fieldname, 'receipt');
@@ -1032,9 +1084,12 @@ export class FinancialsService {
     if (master.phoneNumber) {
       const formattedAmount = Number(createPayment.amount).toLocaleString('fa-IR');
 
-      await this.smsService.sendMessageToUser(master.phoneNumber, `مدیر محترم سلام ${master.fullName}
+      await this.smsService.sendMessageToUser(
+        master.phoneNumber,
+        `مدیر محترم سلام ${master.fullName}
 درخواست پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان با موفقیت ثبت شد. پس از تایید پرداخت، پلن شما فعال خواهد شد.
-با تشکر.`);
+با تشکر.`,
+      );
     }
 
     return {
@@ -1122,10 +1177,7 @@ export class FinancialsService {
       }
 
       if (payment.master?.phoneNumber && message) {
-        await this.smsService.sendMessageToUser(
-          payment.master.phoneNumber,
-          message,
-        );
+        await this.smsService.sendMessageToUser(payment.master.phoneNumber, message);
       }
 
       return {
@@ -1136,7 +1188,7 @@ export class FinancialsService {
             : 'پرداخت رد شد',
         data: updatePayment,
       };
-    })
+    });
   }
 
   // get all pending subscriptions for admin

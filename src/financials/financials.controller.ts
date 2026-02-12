@@ -44,17 +44,14 @@ interface RequestWithUser extends Request {
 @Controller('financials')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class FinancialsController {
-  constructor(private readonly financialsService: FinancialsService) { }
+  constructor(private readonly financialsService: FinancialsService) {}
 
   // Create plan design payment
   @Post('plans')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.CREATED)
   createPlan(@Req() req, @Body() createPlanDto: CreatePlanDto) {
-    return this.financialsService.createPlanStudent(
-      req.user.userId,
-      createPlanDto,
-    );
+    return this.financialsService.createPlanStudent(req.user.userId, createPlanDto);
   }
 
   // Get all plans payment
@@ -74,11 +71,7 @@ export class FinancialsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePlanDto: UpdatePlanDto,
   ) {
-    return this.financialsService.updatePlanStudent(
-      id,
-      req.user.userId,
-      updatePlanDto,
-    );
+    return this.financialsService.updatePlanStudent(id, req.user.userId, updatePlanDto);
   }
 
   // Delete Plan Student Payment
@@ -93,14 +86,8 @@ export class FinancialsController {
   @Post('transactions/equipment')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.CREATED)
-  createEquipmentTransaction(
-    @Req() req,
-    @Body() createEquipmentDto: CreateEquipmentDto,
-  ) {
-    return this.financialsService.createEquipmentTransaction(
-      req.user.userId,
-      createEquipmentDto,
-    );
+  createEquipmentTransaction(@Req() req, @Body() createEquipmentDto: CreateEquipmentDto) {
+    return this.financialsService.createEquipmentTransaction(req.user.userId, createEquipmentDto);
   }
 
   // Confirms a manual payment
@@ -112,21 +99,14 @@ export class FinancialsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() confirmPaymentDto: ConfirmPaymentDto,
   ) {
-    return this.financialsService.confirmManualPayment(
-      id,
-      req.user.userId,
-      confirmPaymentDto,
-    );
+    return this.financialsService.confirmManualPayment(id, req.user.userId, confirmPaymentDto);
   }
 
   // Rejects a manual payment
   @Post('transactions/:id/reject')
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  rejectPayment(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() rejectDto: RejectPaymentDto,
-  ) {
+  rejectPayment(@Param('id', ParseIntPipe) id: number, @Body() rejectDto: RejectPaymentDto) {
     return this.financialsService.rejectManualPayment(id, rejectDto);
   }
 
@@ -204,11 +184,7 @@ export class FinancialsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() reviewDto: ReviewSubscriptionPaymentDto,
   ) {
-    return this.financialsService.reviewSubscriptionPayment(
-      id,
-      req.user.userId,
-      reviewDto,
-    );
+    return this.financialsService.reviewSubscriptionPayment(id, req.user.userId, reviewDto);
   }
 
   // crud for master plan or controller admin
@@ -240,10 +216,7 @@ export class FinancialsController {
   @Put('master-plans/:id')
   @Roles(Role.Admin)
   @HttpCode(HttpStatus.OK)
-  updateMasterPlan(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateDto: UpdateMasterPlanDto,
-  ) {
+  updateMasterPlan(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateMasterPlanDto) {
     return this.financialsService.updateMasterPlan(id, updateDto);
   }
 

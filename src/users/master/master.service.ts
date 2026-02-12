@@ -119,17 +119,11 @@ export class MasterService {
     });
 
     if (getMaster?.type !== Role.Master) {
-      throw new HttpException(
-        'کاربر مورد نظر از نوع استاد نیست',
-        HttpStatus.FORBIDDEN,
-      );
+      throw new HttpException('کاربر مورد نظر از نوع استاد نیست', HttpStatus.FORBIDDEN);
     }
 
     if (!getMaster) {
-      throw new HttpException(
-        'استادی با این مشخصات یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('استادی با این مشخصات یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     return {
@@ -177,17 +171,11 @@ export class MasterService {
     });
 
     if (getMaster?.type !== Role.Master) {
-      throw new HttpException(
-        'کاربر مورد نظر یک استاد نیست',
-        HttpStatus.FORBIDDEN,
-      );
+      throw new HttpException('کاربر مورد نظر یک استاد نیست', HttpStatus.FORBIDDEN);
     }
 
     if (!getMaster) {
-      throw new HttpException(
-        'استادی با این مشخصات یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('استادی با این مشخصات یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     return {
@@ -207,10 +195,7 @@ export class MasterService {
     const now = new Date();
 
     if (!master) {
-      throw new HttpException(
-        'استاد با این مشخصات یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('استاد با این مشخصات یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     if (!plan) {
@@ -218,10 +203,7 @@ export class MasterService {
     }
 
     if (master.type !== Role.Master) {
-      throw new HttpException(
-        'امکان اختصاص پلن به این کاربر وجود ندارد',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('امکان اختصاص پلن به این کاربر وجود ندارد', HttpStatus.BAD_REQUEST);
     }
 
     if (master.planEndsAt && master.planEndsAt > now) {
@@ -399,9 +381,7 @@ export class MasterService {
   }
 
   // delete account master
-  async deleteMaster(
-    masterId: number,
-  ): Promise<{ statusCode: number; message: string }> {
+  async deleteMaster(masterId: number): Promise<{ statusCode: number; message: string }> {
     const master = await this.getMasterById(masterId);
 
     await this.prisma.$transaction(async (tx) => {

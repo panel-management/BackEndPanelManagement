@@ -31,22 +31,13 @@ export class ClubProfileController {
 
   @Post('complete-profile-club')
   @HttpCode(HttpStatus.CREATED)
-  completeClubProfile(
-    @Req() req,
-    @Body() completeProfileDto: CompleteProfileDto,
-  ) {
-    return this.clubProfile.completeClubProfile(
-      req.user.userId,
-      completeProfileDto,
-    );
+  completeClubProfile(@Req() req, @Body() completeProfileDto: CompleteProfileDto) {
+    return this.clubProfile.completeClubProfile(req.user.userId, completeProfileDto);
   }
 
   @Put('update-profile-club')
   @HttpCode(HttpStatus.OK)
   updateClubProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDto) {
-    return this.clubProfile.updateClubProfile(
-      req.user.userId,
-      updateProfileDto,
-    );
+    return this.clubProfile.updateClubProfile(req.user.userId, updateProfileDto);
   }
 }

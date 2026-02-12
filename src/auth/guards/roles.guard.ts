@@ -27,10 +27,7 @@ export class RolesGuard implements CanActivate {
     const user: UserPayload = request.user;
 
     if (!user || user.type === undefined) {
-      throw new HttpException(
-        'شما دسترسی لازم برای این بخش را ندارید',
-        HttpStatus.FORBIDDEN,
-      );
+      throw new HttpException('شما دسترسی لازم برای این بخش را ندارید', HttpStatus.FORBIDDEN);
     }
 
     const hasRole = () => requiredRoles.some((role) => user.type === role);
@@ -39,9 +36,6 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    throw new HttpException(
-      'شما دسترسی لازم برای این بخش را ندارید',
-      HttpStatus.FORBIDDEN,
-    );
+    throw new HttpException('شما دسترسی لازم برای این بخش را ندارید', HttpStatus.FORBIDDEN);
   }
 }

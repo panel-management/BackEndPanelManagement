@@ -71,11 +71,7 @@ export class CoachController {
     @Body() updateCoachDto: UpdateCoachDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.coachService.updateCoachProfile(
-      req.user.userId,
-      updateCoachDto,
-      file,
-    );
+    return this.coachService.updateCoachProfile(req.user.userId, updateCoachDto, file);
   }
 
   @Put(':id')
@@ -88,12 +84,7 @@ export class CoachController {
     @Body() updateCoachDto: UpdateCoachDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.coachService.updateCoach(
-      coachId,
-      req.user.userId,
-      updateCoachDto,
-      file,
-    );
+    return this.coachService.updateCoach(coachId, req.user.userId, updateCoachDto, file);
   }
 
   @Put('changeStatus/:id')
@@ -104,11 +95,7 @@ export class CoachController {
     @Param('id', ParseIntPipe) coachId: number,
     @Body() updateStatusDto: UpdateStatusDto,
   ) {
-    return this.coachService.changeStatusAccount(
-      coachId,
-      req.user.userId,
-      updateStatusDto,
-    );
+    return this.coachService.changeStatusAccount(coachId, req.user.userId, updateStatusDto);
   }
 
   @Delete(':id')

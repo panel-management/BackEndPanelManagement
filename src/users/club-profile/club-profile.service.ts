@@ -15,10 +15,7 @@ export class ClubProfileService {
     });
 
     if (!profile) {
-      throw new HttpException(
-        'پروفایل باشگاه هنوز ایجاد نشده است',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('پروفایل باشگاه هنوز ایجاد نشده است', HttpStatus.NOT_FOUND);
     }
 
     return {
@@ -35,17 +32,11 @@ export class ClubProfileService {
     });
 
     if (!user) {
-      throw new HttpException(
-        'کاربر با این مشخصات پیدا نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('کاربر با این مشخصات پیدا نشد', HttpStatus.NOT_FOUND);
     }
 
     if (user.clubProfile?.isProfileComplete) {
-      throw new HttpException(
-        'پروفایل باشگاه شما قبلا تکمیل شده است',
-        HttpStatus.FORBIDDEN,
-      );
+      throw new HttpException('پروفایل باشگاه شما قبلا تکمیل شده است', HttpStatus.FORBIDDEN);
     }
 
     const clubProfile = await this.prisma.clubProfile.upsert({
@@ -53,16 +44,12 @@ export class ClubProfileService {
       create: {
         userId: masterId,
         ...dto,
-        socialNetworks: dto.socialNetworks
-          ? (dto.socialNetworks as Prisma.JsonObject)
-          : undefined,
+        socialNetworks: dto.socialNetworks ? (dto.socialNetworks as Prisma.JsonObject) : undefined,
         isProfileComplete: true,
       },
       update: {
         ...dto,
-        socialNetworks: dto.socialNetworks
-          ? (dto.socialNetworks as Prisma.JsonObject)
-          : undefined,
+        socialNetworks: dto.socialNetworks ? (dto.socialNetworks as Prisma.JsonObject) : undefined,
         isProfileComplete: true,
       },
     });
@@ -80,19 +67,14 @@ export class ClubProfileService {
     });
 
     if (!profile) {
-      throw new HttpException(
-        'پروفایل استاد با این مشخصات پیدا نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('پروفایل استاد با این مشخصات پیدا نشد', HttpStatus.NOT_FOUND);
     }
 
     const clubProfile = await this.prisma.clubProfile.update({
       where: { userId: masterId },
       data: {
         ...dto,
-        socialNetworks: dto.socialNetworks
-          ? (dto.socialNetworks as Prisma.JsonObject)
-          : undefined,
+        socialNetworks: dto.socialNetworks ? (dto.socialNetworks as Prisma.JsonObject) : undefined,
       },
     });
 

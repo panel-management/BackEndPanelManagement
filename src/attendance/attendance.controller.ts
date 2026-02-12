@@ -23,33 +23,24 @@ import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.Master)
 export class AttendanceController {
-  constructor(private readonly attendanceService: AttendanceService) { }
+  constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post('/mark')
   @HttpCode(HttpStatus.CREATED)
   markAttendance(@Req() req, @Body() markAttendanceDto: MarkAttendanceDto) {
-    return this.attendanceService.markAttendance(
-      req.user.userId,
-      markAttendanceDto,
-    );
+    return this.attendanceService.markAttendance(req.user.userId, markAttendanceDto);
   }
 
   @Get('/list')
   @HttpCode(HttpStatus.OK)
   getAttendanceList(@Req() req, @Query() pageQueryDto: PaginationQueryDto) {
-    return this.attendanceService.getAttendanceListForDate(
-      req.user.userId,
-      pageQueryDto,
-    );
+    return this.attendanceService.getAttendanceListForDate(req.user.userId, pageQueryDto);
   }
 
   @Get('/report')
   @HttpCode(HttpStatus.OK)
   getReport(@Req() req, @Query() queryDto: GetReportDto) {
-    return this.attendanceService.getAttendanceReportFull(
-      req.user.userId,
-      queryDto,
-    );
+    return this.attendanceService.getAttendanceReportFull(req.user.userId, queryDto);
   }
 
   @Get('/history/:id')

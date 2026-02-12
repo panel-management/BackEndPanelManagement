@@ -40,10 +40,7 @@ async function bootstrap() {
   const logger = app.get(LoggerService);
   app.useLogger(logger);
 
-  app.useGlobalFilters(
-    new AllExceptionFilter(logger),
-    new HttpExceptionFilter(),
-  );
+  app.useGlobalFilters(new AllExceptionFilter(logger), new HttpExceptionFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({

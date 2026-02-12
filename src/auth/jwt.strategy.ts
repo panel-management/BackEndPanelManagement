@@ -25,10 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any): Promise<UserPayload> {
     const user = await this.auth.validateUserById(payload.sub);
     if (!user) {
-      throw new HttpException(
-        'کاربر مورد نظر یافت نشد یا حذف شده است',
-        HttpStatus.UNAUTHORIZED,
-      );
+      throw new HttpException('کاربر مورد نظر یافت نشد یا حذف شده است', HttpStatus.UNAUTHORIZED);
     }
     return { userId: payload.sub, phone: payload.phone, type: payload.type };
   }

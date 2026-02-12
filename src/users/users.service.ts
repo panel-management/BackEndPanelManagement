@@ -23,18 +23,13 @@ export class UsersService {
   private calculateProgress(startDate: Date, endDate: Date, now: Date) {
     const totalDurationMs = endDate.getTime() - startDate.getTime();
     const elapsedMs = Math.max(0, now.getTime() - startDate.getTime());
-    const daysTotal = Math.max(
-      0,
-      Math.round(totalDurationMs / (1000 * 60 * 60 * 24)),
-    );
+    const daysTotal = Math.max(0, Math.round(totalDurationMs / (1000 * 60 * 60 * 24)));
     const daysLeft = Math.max(
       0,
       Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
     );
     const progressPercentage =
-      totalDurationMs > 0
-        ? Math.max(0, Math.min(100, (elapsedMs / totalDurationMs) * 100))
-        : 0;
+      totalDurationMs > 0 ? Math.max(0, Math.min(100, (elapsedMs / totalDurationMs) * 100)) : 0;
 
     return {
       daysTotal: daysTotal,
@@ -123,8 +118,7 @@ export class UsersService {
       if (pendingPayment) {
         return {
           statusCode: HttpStatus.ACCEPTED,
-          message:
-            'رسید پرداخت شما در حال بررسی است. لطفاً صبر کنید تا توسط ادمین تایید شود',
+          message: 'رسید پرداخت شما در حال بررسی است. لطفاً صبر کنید تا توسط ادمین تایید شود',
           userType: 'MASTER',
           isActive: false,
           isPending: true,
@@ -205,14 +199,9 @@ export class UsersService {
 
       const plan = user.assignedPlan;
 
-      const totalDebt = user.studentTransactions.reduce(
-        (sum, t) => sum + t.amount.toNumber(),
-        0,
-      );
+      const totalDebt = user.studentTransactions.reduce((sum, t) => sum + t.amount.toNumber(), 0);
 
-      const unpaidFees = user.studentTransactions.filter(
-        (t) => t.type === TransactionType.FEE,
-      );
+      const unpaidFees = user.studentTransactions.filter((t) => t.type === TransactionType.FEE);
 
       if (!user.planEndsAt) {
         return {
@@ -256,8 +245,7 @@ export class UsersService {
       }
 
       const nextDueTransaction = user.studentTransactions[0];
-      const isOverdue =
-        nextDueTransaction && new Date(nextDueTransaction.dueDate) < now;
+      const isOverdue = nextDueTransaction && new Date(nextDueTransaction.dueDate) < now;
 
       if (totalDebt > 0) {
         return {
@@ -325,16 +313,10 @@ export class UsersService {
     });
   }
 
-  async updateProfile(
-    userId: number,
-    profileData: profileData,
-  ): Promise<users> {
+  async updateProfile(userId: number, profileData: profileData): Promise<users> {
     const existingUser = await this.prisma.users.findFirst({
       where: {
-        OR: [
-          { nationalCode: profileData.nationalCode },
-          { phoneNumber: profileData.phoneNumber },
-        ],
+        OR: [{ nationalCode: profileData.nationalCode }, { phoneNumber: profileData.phoneNumber }],
         NOT: { user_id: userId },
       },
     });

@@ -1,5 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, Matches, IsOptional, IsInt, IsBoolean, IsDate } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  Matches,
+  IsOptional,
+  IsInt,
+  IsBoolean,
+  IsDate,
+} from 'class-validator';
 
 export class CreateStudentDto {
   @IsString()

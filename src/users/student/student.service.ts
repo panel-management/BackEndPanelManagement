@@ -1,12 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateStudentDto } from './dto/create-student.dto';
-import {
-  Belt,
-  Prisma,
-  TransactionStatus,
-  TransactionType,
-} from '@prisma/client';
+import { Belt, Prisma, TransactionStatus, TransactionType } from '@prisma/client';
 import { Role } from 'src/auth/enums/role.enum';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { FinancialsService } from 'src/financials/financials.service';
@@ -126,17 +121,11 @@ export class StudentService {
     });
 
     if (student?.type !== Role.Student) {
-      throw new HttpException(
-        'هنرجویی با این مشخاصت یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('هنرجویی با این مشخاصت یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     if (!student || student.masterId !== masterId) {
-      throw new HttpException(
-        'هنرجویی با این مشخاصت یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('هنرجویی با این مشخاصت یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     return {
@@ -171,17 +160,11 @@ export class StudentService {
     });
 
     if (student?.type !== Role.Student) {
-      throw new HttpException(
-        'هنرجویی با این مشخاصت یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('هنرجویی با این مشخاصت یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     if (!student) {
-      throw new HttpException(
-        'هنرجویی با این مشخاصت یافت نشد',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('هنرجویی با این مشخاصت یافت نشد', HttpStatus.NOT_FOUND);
     }
 
     return {
@@ -217,18 +200,12 @@ export class StudentService {
         where: { id: dto.beltIds },
       });
       if (!belt) {
-        throw new HttpException(
-          'کمربند با این ایدی یافت نشد',
-          HttpStatus.NOT_FOUND,
-        );
+        throw new HttpException('کمربند با این ایدی یافت نشد', HttpStatus.NOT_FOUND);
       }
     }
 
     if (!dto.planId) {
-      throw new HttpException(
-        'انتخاب پلن برای هنرجو الزامی است',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('انتخاب پلن برای هنرجو الزامی است', HttpStatus.BAD_REQUEST);
     }
 
     const planExists = await this.financialsService.findPlanById(dto.planId);
@@ -254,12 +231,8 @@ export class StudentService {
             address: dto.address,
             underSupervisionDoctor: dto.underSupervisionDoctor,
             diseaseRecords: dto.diseaseRecords,
-            achievedBelts: dto.beltIds
-              ? { connect: [{ id: dto.beltIds }] }
-              : undefined,
-            currentBelt: dto.beltIds
-              ? { connect: { id: dto.beltIds } }
-              : undefined,
+            achievedBelts: dto.beltIds ? { connect: [{ id: dto.beltIds }] } : undefined,
+            currentBelt: dto.beltIds ? { connect: { id: dto.beltIds } } : undefined,
             sport: { connect: { id: sportId } },
             master: { connect: { user_id: masterId } },
             lastFeeGenerated: new Date(),
@@ -301,9 +274,7 @@ export class StudentService {
         });
 
         if (newUser.phoneNumber) {
-          const formattedAmount = Number(transaction.amount).toLocaleString(
-            'fa-IR',
-          );
+          const formattedAmount = Number(transaction.amount).toLocaleString('fa-IR');
           const formattedDueDate = dueDate.toLocaleDateString('fa-IR', {
             year: 'numeric',
             month: 'long',
@@ -328,10 +299,7 @@ export class StudentService {
         };
       });
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         const target = error.meta?.target as string[];
         if (target?.includes('phoneNumber')) {
           throw new HttpException('شماره تلفن تکراری است', HttpStatus.CONFLICT);
@@ -366,9 +334,7 @@ export class StudentService {
       address: dto.address,
       underSupervisionDoctor: dto.underSupervisionDoctor,
       diseaseRecords: dto.diseaseRecords,
-      achievedBelts: dto.beltIds
-        ? { connect: [{ id: dto.beltIds }] }
-        : undefined,
+      achievedBelts: dto.beltIds ? { connect: [{ id: dto.beltIds }] } : undefined,
       currentBelt: dto.beltIds ? { connect: { id: dto.beltIds } } : undefined,
     };
 
@@ -378,10 +344,7 @@ export class StudentService {
     if (dto.planId) {
       newPlan = await this.financialsService.findPlanById(dto.planId);
       if (!newPlan || newPlan.masterId !== masterId) {
-        throw new HttpException(
-          'پلن جدید معتبر نیست یا متعلق به شما نیست',
-          HttpStatus.NOT_FOUND,
-        );
+        throw new HttpException('پلن جدید معتبر نیست یا متعلق به شما نیست', HttpStatus.NOT_FOUND);
       }
 
       const now = new Date();
@@ -455,10 +418,7 @@ export class StudentService {
         data: updatedStudent,
       };
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         const target = error.meta?.target as string[];
         if (target?.includes('phoneNumber')) {
           throw new HttpException('شماره تلفن تکراری است', HttpStatus.CONFLICT);
@@ -494,9 +454,7 @@ export class StudentService {
         address: dto.address,
         underSupervisionDoctor: dto.underSupervisionDoctor,
         diseaseRecords: dto.diseaseRecords,
-        achievedBelts: dto.beltIds
-          ? { connect: [{ id: dto.beltIds }] }
-          : undefined,
+        achievedBelts: dto.beltIds ? { connect: [{ id: dto.beltIds }] } : undefined,
         currentBelt: dto.beltIds ? { connect: { id: dto.beltIds } } : undefined,
       },
       select: {

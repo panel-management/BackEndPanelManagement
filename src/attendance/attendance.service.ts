@@ -9,7 +9,7 @@ import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class AttendanceService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private getStartOfTodayUTC(): Date {
     const now = new Date();
@@ -35,7 +35,7 @@ export class AttendanceService {
       return;
     }
 
-    const activeMasterIds = activeMastersToday.map(m => m.markedById);
+    const activeMasterIds = activeMastersToday.map((m) => m.markedById);
 
     const subordinatesOfActiveMasters = await this.prisma.users.findMany({
       where: {
@@ -74,7 +74,9 @@ export class AttendanceService {
       skipDuplicates: true,
     });
 
-    this.logger.log(`تعداد ${finalData.length} نفر که توسط اساتید فراموش شده بودند، غایب زده شدند.`);
+    this.logger.log(
+      `تعداد ${finalData.length} نفر که توسط اساتید فراموش شده بودند، غایب زده شدند.`,
+    );
   }
 
   // presnt and absent for stduent and coach
@@ -83,26 +85,28 @@ export class AttendanceService {
     const date = this.getStartOfTodayUTC();
 
     if (!masterId || isNaN(masterId)) {
-      throw new HttpException('شناسه مربی نامعتبر یا نامعتبر شده است', HttpStatus.BAD_REQUEST)
+      throw new HttpException('شناسه مربی نامعتبر یا نامعتبر شده است', HttpStatus.BAD_REQUEST);
     }
 
-    await this.prisma.$transaction(attendances.map((att) =>
-      this.prisma.attendance.upsert({
-        where: {
-          date_studentId: {
-            date: date,
-            studentId: att.studentId,
+    await this.prisma.$transaction(
+      attendances.map((att) =>
+        this.prisma.attendance.upsert({
+          where: {
+            date_studentId: {
+              date: date,
+              studentId: att.studentId,
+            },
           },
-        },
-        update: { status: att.status },
-        create: {
-          date: date,
-          status: att.status,
-          student: { connect: { user_id: att.studentId } },
-          markedBy: { connect: { user_id: masterId } },
-        },
-      }),
-    ))
+          update: { status: att.status },
+          create: {
+            date: date,
+            status: att.status,
+            student: { connect: { user_id: att.studentId } },
+            markedBy: { connect: { user_id: masterId } },
+          },
+        }),
+      ),
+    );
 
     return { statusCode: HttpStatus.OK, message: 'حضور غیاب با موفقیت ثبت شد' };
   }
@@ -128,7 +132,7 @@ export class AttendanceService {
         skip,
         take: limit,
       }),
-    ])
+    ]);
 
     if (users.length === 0) {
       throw new HttpException('هیچ کاربری برای این استاد یافت نشد', HttpStatus.NOT_FOUND);
@@ -144,9 +148,7 @@ export class AttendanceService {
     });
 
     const attendanceList = users.map((user) => {
-      const attendanceRecord = existingAttendances.find(
-        (att) => att.studentId === user.user_id,
-      );
+      const attendanceRecord = existingAttendances.find((att) => att.studentId === user.user_id);
       return {
         userId: user.user_id,
         fullName: user.fullName,
@@ -227,14 +229,14 @@ export class AttendanceService {
         distinct: ['date'],
         select: { date: true },
         orderBy: { status: 'desc' },
-      })
-    ])
+      }),
+    ]);
 
     const summary: Record<AttendanceStatus, number> = {
       PRESENT: 0,
       ABSENT: 0,
       LATE: 0,
-      EXCUSED: 0
+      EXCUSED: 0,
     };
 
     groupStats.forEach((stat) => {
@@ -243,7 +245,7 @@ export class AttendanceService {
       }
     });
 
-    const sessionDates = sessionData.map(s => s.date.toISOString());
+    const sessionDates = sessionData.map((s) => s.date.toISOString());
 
     const sessions = {
       totalSessions: sessionDates.length,
@@ -310,9 +312,10 @@ export class AttendanceService {
 
     return {
       statusCode: HttpStatus.OK,
-      message: history.length > 0
-        ? 'تاریخچه حضور و غیاب دریافت شد'
-        : 'هیچ سابقه‌ای در این بازه زمانی یافت نشد',
+      message:
+        history.length > 0
+          ? 'تاریخچه حضور و غیاب دریافت شد'
+          : 'هیچ سابقه‌ای در این بازه زمانی یافت نشد',
       data: history,
     };
   }

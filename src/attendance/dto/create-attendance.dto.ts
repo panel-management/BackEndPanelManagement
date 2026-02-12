@@ -1,11 +1,4 @@
-import {
-  IsEnum,
-  IsArray,
-  ValidateNested,
-  IsString,
-  IsOptional,
-  IsInt,
-} from 'class-validator';
+import { IsEnum, IsArray, ValidateNested, IsString, IsOptional, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AttendanceStatus } from '@prisma/client';
 import { PaginationQueryDto } from 'src/common/dto/pagination.dto';

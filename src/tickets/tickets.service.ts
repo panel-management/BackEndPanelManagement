@@ -13,11 +13,11 @@ export class TicketsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly smsService: SmsService,
-  ) { }
+  ) {}
 
   // view all tickets (user)
   async getTicketMasters(masterId: number, pageQueryDto: PaginationQueryDto) {
-    const { page = 1, limit = 10 } = pageQueryDto
+    const { page = 1, limit = 10 } = pageQueryDto;
     const skip = (page - 1) * limit;
 
     const [tickets, total] = await this.prisma.$transaction([
@@ -45,8 +45,8 @@ export class TicketsService {
       }),
       this.prisma.ticket.count({
         where: { userId: masterId },
-      })
-    ])
+      }),
+    ]);
 
     return {
       statusCode: HttpStatus.OK,
@@ -63,8 +63,8 @@ export class TicketsService {
 
   // view all tickets (admin)
   async getTicketAdmins(pageQueryDto: PaginationQueryDto) {
-    const { page = 1, limit = 10 } = pageQueryDto
-    const skip = (page - 1) * limit
+    const { page = 1, limit = 10 } = pageQueryDto;
+    const skip = (page - 1) * limit;
 
     const [total, openTickets, pendingTickets, highPriorityTickets, tickets] =
       await this.prisma.$transaction([
@@ -165,7 +165,7 @@ export class TicketsService {
     });
 
     if (!ticket) {
-      throw new HttpException('تیکت مورد نظر یافت نشد یا شما دسترسی ندارید', HttpStatus.NOT_FOUND)
+      throw new HttpException('تیکت مورد نظر یافت نشد یا شما دسترسی ندارید', HttpStatus.NOT_FOUND);
     }
 
     return {
@@ -176,10 +176,7 @@ export class TicketsService {
   }
 
   // Changes the status of a ticket (Admin and master).
-  async changeTicketStatus(
-    ticketId: string,
-    updateTicketStatusDto: UpdateTicketStatusDto,
-  ) {
+  async changeTicketStatus(ticketId: string, updateTicketStatusDto: UpdateTicketStatusDto) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
     });
@@ -189,7 +186,10 @@ export class TicketsService {
     }
 
     if (ticket.status === TicketStatus.CLOSED) {
-      throw new HttpException('تیکت بسته شده و دیگه نمی توانید وضعیت ان را تغییر دهید', HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        'تیکت بسته شده و دیگه نمی توانید وضعیت ان را تغییر دهید',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     const ticketStatus = await this.prisma.ticket.update({
@@ -271,7 +271,10 @@ export class TicketsService {
     }
 
     if (findTicket.status === TicketStatus.CLOSED) {
-      throw new HttpException('این تیکت بسته شده است و نمی‌توانید پیام جدیدی ارسال کنید', HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        'این تیکت بسته شده است و نمی‌توانید پیام جدیدی ارسال کنید',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     const messageTicket = await this.prisma.ticketMessage.create({

@@ -7,6 +7,7 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 import { FinancialsService } from 'src/financials/financials.service';
 import { SmsService } from 'src/sms/sms.service';
 import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
+import { UpdateStatusDto } from 'src/common/dto/updateStatus.dto';
 
 type UpdatedStudentData = {
   fullName: string | null;
@@ -28,7 +29,7 @@ export class StudentService {
     private readonly prisma: PrismaService,
     private readonly financialsService: FinancialsService,
     private readonly smsService: SmsService,
-  ) {}
+  ) { }
 
   // get all students for master with pagination
   async findAll(masterId: number, pageQueryDto: PaginationQueryDto) {
@@ -477,6 +478,35 @@ export class StudentService {
       statusCode: HttpStatus.OK,
       message: 'پروفایل با موفقیت بروزرسانی شد',
       data: updateStudent,
+    };
+  }
+
+  // change status account
+  async changeStatusAccount(
+    studentId: number,
+    masterId: number,
+    status: UpdateStatusDto,
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: UpdateStatusDto;
+  }> {
+    await this.getById(studentId, masterId);
+
+    const changeStatus = await this.prisma.users.update({
+      where: { user_id: studentId, type: Role.Student },
+      data: { isActive: status.isActive },
+      select: {
+        isActive: true,
+      },
+    });
+
+    const statusMessage = changeStatus.isActive ? 'فعال' : 'غیر فعال';
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: `وضعیت هنرجو با موفقیت به ${statusMessage} تغییر یافت`,
+      data: changeStatus,
     };
   }
 

@@ -21,11 +21,12 @@ import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
+import { UpdateStatusDto } from 'src/common/dto/updateStatus.dto';
 
 @Controller('student')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class StudentController {
-  constructor(private readonly studentService: StudentService) {}
+  constructor(private readonly studentService: StudentService) { }
 
   // get All Students for Master
   @Get()
@@ -77,6 +78,18 @@ export class StudentController {
     @Body() updateStudentDto: UpdateStudentDto,
   ) {
     return this.studentService.updateById(studentId, req.user.userId, updateStudentDto);
+  }
+
+  // change status stduent
+  @Put('changeStatus/:id')
+  @Roles(Role.Master)
+  @HttpCode(HttpStatus.OK)
+  changeStatusAccount(
+    @Req() req,
+    @Param('id', ParseIntPipe) studentId: number,
+    @Body() updateStatusDto: UpdateStatusDto,
+  ) {
+    return this.studentService.changeStatusAccount(studentId, req.user.userId, updateStatusDto);
   }
 
   // Delete Student by Master

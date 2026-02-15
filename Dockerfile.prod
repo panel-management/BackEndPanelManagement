@@ -1,41 +1,54 @@
 # ---- Builder Stage ----
-FROM node:20-alpine3.20 AS builder
+FROM node:20-slim AS builder
 
-# set the worker directory inside the container
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# copy file package.json
-COPY package*.json ./
+# install openssl for prisma
+RUN apt-get update -y && apt-get install -y openssl
 
-# install dependencies
+# install pnpm
 RUN npm install -g pnpm
 
-RUN pnpm install
+# copy file package for instaling package
+COPY package.json pnpm-lock.yaml ./
+COPY prisma ./prisma/
 
-# copy the  rest of the application
+# install package
+RUN pnpm install --frozen-lockfile
+
 COPY . .
 
-# generate file prisma
-RUN npx prisma generate
-
-# building project
+# running prisma generate for build project
+RUN pnpm prisma generate
 RUN pnpm build
 
 # ---- Production Stage ----
-FROM node:20-alpine3.20 AS production
+FROM node:20-slim
 
-# set the worker directory inside the container
-WORKDIR /usr/src/app
+WORKDIR /app
 
-RUN npm install -g pm2
+# install openssl for prisma
+RUN apt-get update -y && apt-get install -y openssl tzdata
 
-# copy file dist and prisma
-COPY --from=builder /usr/src/app/dist ./dist
-COPY --from=builder /usr/src/app/prisma ./prisma
-COPY --from=builder /usr/src/app/node_modules ./node_modules
+# set timezone
+ENV TZ=Asia/Tehran
 
-# remove folder src
-RUN rm -rf ./src
+# install pm2 and pnpm
+RUN npm install -g pnpm pm2
 
-# running the app and generate database
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && ./node_modules/.bin/prisma db seed && pm2-runtime dist/src/main.js -i max"]
+# copy file
+COPY package.json pnpm-lock.yaml ./
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+
+# install package prodcution
+RUN pnpm install --prod --frozen-lockfile
+
+# running prisma generate
+RUN npx prisma@6.19.1 generate
+
+# expose port
+EXPOSE 3000
+
+# running the app and generate seed
+CMD ["sh", "-c", "npx prisma@6.19.1 migrate deploy && npx prisma@6.19.1 db seed && pm2-runtime dist/src/main.js -i max"]

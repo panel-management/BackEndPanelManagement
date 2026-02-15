@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { Role } from '../src/auth/enums/role.enum';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
   const sportsToSeed = [
@@ -28,20 +27,21 @@ async function main() {
     { name: 'شمشیربازی', hasBeltSystem: false },
     { name: 'پانکریشن', hasBeltSystem: false },
     { name: 'سیستم‌آ', hasBeltSystem: false },
-    { name: 'باشگاه عمومی', hasBeltSystem: false },
     { name: 'MMA', hasBeltSystem: false },
+    { name: 'باشگاه عمومی', hasBeltSystem: false },
+    { name: 'شنا', hasBeltSystem: false },
+    { name: 'ژیمناستیک', hasBeltSystem: false },
+    { name: 'دوچرخه‌سواری', hasBeltSystem: false },
+    { name: 'دو و میدانی', hasBeltSystem: false },
+    { name: 'والیبال', hasBeltSystem: false },
+    { name: 'بسکتبال', hasBeltSystem: false },
+    { name: 'فوتبال', hasBeltSystem: false },
+    { name: 'فوتسال', hasBeltSystem: false },
+    { name: 'هندبال', hasBeltSystem: false },
+    { name: 'تنیس', hasBeltSystem: false },
+    { name: 'تنیس روی میز', hasBeltSystem: false },
+    { name: 'بدمینتون', hasBeltSystem: false },
   ];
-
-  for (const sportData of sportsToSeed) {
-    await prisma.sport.upsert({
-      where: { name: sportData.name },
-      update: { hasBeltSystem: sportData.hasBeltSystem },
-      create: { name: sportData.name, hasBeltSystem: sportData.hasBeltSystem },
-    });
-    console.log(`Sports ${sportData.name} successfully processed.`);
-  }
-
-  console.log('--- success process added sport  ---');
 
   const beltsToSeed = [
     'سفید',
@@ -61,47 +61,56 @@ async function main() {
     'نقره‌ای',
   ];
 
-  for (const beltColor of beltsToSeed) {
-    await prisma.belt.upsert({
-      where: { color: beltColor },
-      update: {},
-      create: { color: beltColor },
-    });
-  }
-
-  console.log('--- success process added belt ---');
-
-  const adminPhoneNumber = process.env.ADMIN_PHONE_NUMBER!;
-  const adminNationalCode = process.env.ADMIN_NATIONAL_CODE!;
+  const adminPhoneNumber = process.env.ADMIN_PHONE_NUMBER
+  const adminNationalCode = process.env.ADMIN_NATIONAL_CODE
 
   if (!adminPhoneNumber || !adminNationalCode) {
-    throw new Error(
-      '❌ ENV variables are missing. Please set ADMIN_PHONE_NUMBER and ADMIN_NATIONAL_CODE in your .env file.',
-    );
+    throw new Error('❌ متغیرهای ADMIN_PHONE_NUMBER یا ADMIN_NATIONAL_CODE در فایل .env یافت نشدند.');
   }
 
-  await prisma.users.upsert({
-    where: { phoneNumber: adminPhoneNumber },
-    update: {},
-    create: {
-      phoneNumber: adminPhoneNumber,
-      fullName: 'ادمین',
-      nationalCode: adminNationalCode,
-      type: Role.Admin,
-    },
-  });
+  console.log('🌱 Starting seeding...');
 
-  console.log(
-    `--- create successfully admin system by ${adminPhoneNumber} ---`,
-  );
+  await prisma.$transaction(async (tx) => {
+    await Promise.all(
+      sportsToSeed.map((sport) =>
+        tx.sport.upsert({
+          where: { name: sport.name },
+          update: { hasBeltSystem: sport.hasBeltSystem },
+          create: sport,
+        }),
+      ),
+    )
+
+    await Promise.all(
+      beltsToSeed.map((color) =>
+        tx.belt.upsert({
+          where: { color },
+          update: {},
+          create: { color },
+        }),
+      ),
+    )
+
+    await tx.users.upsert({
+      where: { phoneNumber: adminPhoneNumber },
+      update: {},
+      create: {
+        phoneNumber: adminPhoneNumber,
+        fullName: 'ادمین',
+        nationalCode: adminNationalCode,
+        type: 0,
+      },
+    })
+  })
+
+  console.log('✅ Seed completed successfully')
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('❌ Seeding failed:', e);
     process.exit(1);
   })
   .finally(async () => {
-    console.log('Disconnecting from Prisma Client...');
     await prisma.$disconnect();
   });

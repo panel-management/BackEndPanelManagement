@@ -26,7 +26,7 @@ import { UpdateStatusDto } from 'src/common/dto/updateStatus.dto';
 @Controller('student')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class StudentController {
-  constructor(private readonly studentService: StudentService) { }
+  constructor(private readonly studentService: StudentService) {}
 
   // get All Students for Master
   @Get()

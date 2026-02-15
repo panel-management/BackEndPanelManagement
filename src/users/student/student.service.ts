@@ -29,7 +29,7 @@ export class StudentService {
     private readonly prisma: PrismaService,
     private readonly financialsService: FinancialsService,
     private readonly smsService: SmsService,
-  ) { }
+  ) {}
 
   // get all students for master with pagination
   async findAll(masterId: number, pageQueryDto: PaginationQueryDto) {

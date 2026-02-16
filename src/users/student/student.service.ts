@@ -29,7 +29,7 @@ export class StudentService {
     private readonly prisma: PrismaService,
     private readonly financialsService: FinancialsService,
     private readonly smsService: SmsService,
-  ) {}
+  ) { }
 
   // get all students for master with pagination
   async findAll(masterId: number, pageQueryDto: PaginationQueryDto) {
@@ -282,7 +282,7 @@ export class StudentService {
             day: 'numeric',
           });
 
-          this.smsService.sendMessageToUser(
+          await this.smsService.sendMessageToUser(
             newUser.phoneNumber,
             `سلام ${newUser.fullName} عزیز
 به باشگاه خوش آمدید!
@@ -406,7 +406,7 @@ export class StudentService {
       });
 
       if (dto.planId && updatedStudent.phoneNumber) {
-        this.smsService.sendMessageToUser(
+        await this.smsService.sendMessageToUser(
           updatedStudent.phoneNumber,
           `هنرجوی عزیز ${updatedStudent.fullName} سلام
   پلن شما به "${newPlan.name}" تغییر یافت. مهلت پرداخت جدید: ${nextDueDate?.toLocaleDateString('fa-IR')}.`,

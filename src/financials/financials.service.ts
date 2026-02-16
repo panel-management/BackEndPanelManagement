@@ -31,7 +31,7 @@ export class FinancialsService {
     private readonly smsService: SmsService,
     @Inject(forwardRef(() => UsersService))
     private readonly userService: UsersService,
-  ) {}
+  ) { }
 
   private readonly logger = new Logger(FinancialsService.name);
 
@@ -62,8 +62,8 @@ export class FinancialsService {
 
       const daysSinceLastFee = student.lastFeeGenerated
         ? Math.floor(
-            (now.getTime() - new Date(student.lastFeeGenerated).getTime()) / (1000 * 60 * 60 * 24),
-          )
+          (now.getTime() - new Date(student.lastFeeGenerated).getTime()) / (1000 * 60 * 60 * 24),
+        )
         : 0;
 
       if (
@@ -1066,7 +1066,7 @@ export class FinancialsService {
       );
     }
 
-    const imageUrl = fileUtils.createImageUrl(file.fieldname, 'receipt');
+    const imageUrl = fileUtils.createImageUrl(file.filename, 'receipt');
 
     const createPayment = await this.prisma.subscriptionPayment.create({
       data: {

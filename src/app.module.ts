@@ -14,7 +14,6 @@ import { TicketsModule } from './tickets/tickets.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from './common/logger/logger.module';
 import { ActiveUserGuard } from './common/guards/active-user.guard';
-import { PlanGuard } from './common/guards/plan.guard';
 import jwtConfig from './auth/config/jwt.config';
 import { join } from 'path';
 
@@ -53,12 +52,8 @@ import { join } from 'path';
     },
     {
       provide: APP_GUARD,
-      useClass: PlanGuard,
-    },
-    {
-      provide: APP_GUARD,
       useClass: ActiveUserGuard,
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

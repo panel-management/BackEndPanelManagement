@@ -7,6 +7,7 @@ import {
   PaymentMethod,
   Prisma,
   SubscriptionPaymentStatus,
+  TicketStatus,
   TransactionStatus,
   TransactionType,
 } from '@prisma/client';
@@ -31,7 +32,7 @@ export class FinancialsService {
     private readonly smsService: SmsService,
     @Inject(forwardRef(() => UsersService))
     private readonly userService: UsersService,
-  ) { }
+  ) {}
 
   private readonly logger = new Logger(FinancialsService.name);
 
@@ -62,8 +63,8 @@ export class FinancialsService {
 
       const daysSinceLastFee = student.lastFeeGenerated
         ? Math.floor(
-          (now.getTime() - new Date(student.lastFeeGenerated).getTime()) / (1000 * 60 * 60 * 24),
-        )
+            (now.getTime() - new Date(student.lastFeeGenerated).getTime()) / (1000 * 60 * 60 * 24),
+          )
         : 0;
 
       if (
@@ -827,28 +828,50 @@ export class FinancialsService {
 
   // data dashboard for master
   async getMasterDashboard(masterId: number) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
     const baseWhere = {
       student: { masterId: masterId },
     };
 
     const [
-      paidRevenue,
+      paidStats,
+      unpaidStats,
+      pendingStats,
+      upcomingStats,
       feeRevenue,
       equipmentRevenue,
-      unpaidStats,
-      upcomingStats,
-      paidTransactions,
-      unpaidTransactions,
-      upcomingTransactions,
+      totalStudents,
+      totalCoaches,
+      currentMonthRevenue,
+      openTickets,
     ] = await Promise.all([
-      // Total income (paid)
-      // ۱. مجموع کل درآمد (پرداخت شده‌ها)
+      // 1. Total revenue (PAID transactions)
       this.prisma.transaction.aggregate({
         where: { ...baseWhere, status: TransactionStatus.PAID },
         _sum: { amount: true },
       }),
-      // Total income from tuition fees
-      // ۲. مجموع درآمد از شهریه‌ها
+      // 2. Unpaid debts summary (Total & Count)
+      this.prisma.transaction.aggregate({
+        where: { ...baseWhere, status: TransactionStatus.UNPAID },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+      // 3. Pending transactions summary
+      this.prisma.transaction.aggregate({
+        where: { ...baseWhere, status: TransactionStatus.PENDING },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+      // 4. Upcoming transactions summary
+      this.prisma.transaction.aggregate({
+        where: { ...baseWhere, status: TransactionStatus.UPCOMING },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+      // 5. Revenue from Tuition Fees (Specifically PAID)
       this.prisma.transaction.aggregate({
         where: {
           ...baseWhere,
@@ -857,8 +880,7 @@ export class FinancialsService {
         },
         _sum: { amount: true },
       }),
-      // Total revenue from equipment
-      // ۳. مجموع درآمد از تجهیزات
+      // 6. Revenue from Equipment Sales (Specifically PAID)
       this.prisma.transaction.aggregate({
         where: {
           ...baseWhere,
@@ -867,66 +889,59 @@ export class FinancialsService {
         },
         _sum: { amount: true },
       }),
-      // Total and number of unpaid debts
-      // ۴. مجموع و تعداد بدهی‌های پرداخت نشده
+      // total user student himself master
+      this.prisma.users.count({
+        where: {
+          masterId: masterId,
+          type: Role.Student,
+        },
+      }),
+      // total user coach himself master
+      this.prisma.users.count({
+        where: {
+          masterId: masterId,
+          type: Role.Coach,
+        },
+      }),
+      // total trasaction just one moun
       this.prisma.transaction.aggregate({
-        where: { ...baseWhere, status: TransactionStatus.UNPAID },
+        where: {
+          ...baseWhere,
+          status: TransactionStatus.PAID,
+          createdAt: { gte: startOfMonth, lte: endOfMonth },
+        },
         _sum: { amount: true },
-        _count: { id: true },
       }),
-      // Total and number of upcoming transactions (for future months) - UPDATED
-      // ۵. مجموع و تعداد تراکنش‌های در انتظار (برای ماه‌های آینده) - UPDATED
-      this.prisma.transaction.aggregate({
-        where: { ...baseWhere, status: TransactionStatus.UPCOMING },
-        _sum: { amount: true },
-        _count: { id: true },
-      }),
-      // List of last 10 paid transactions
-      // ۶. لیست ۱۰ تراکنش آخر پرداخت شده
-      this.prisma.transaction.findMany({
-        where: { ...baseWhere, status: TransactionStatus.PAID },
-        take: 20,
-        orderBy: { paymentDate: 'desc' },
-        include: { student: { select: { fullName: true } } },
-      }),
-      // Full list of unpaid transactions
-      // ۷. لیست کامل تراکنش‌های پرداخت نشده
-      this.prisma.transaction.findMany({
-        where: { ...baseWhere, status: TransactionStatus.UNPAID },
-        take: 20,
-        orderBy: { dueDate: 'desc' },
-        include: { student: { select: { fullName: true } } },
-      }),
-      // Full list of upcoming transactions
-      // ۸. لیست کامل تراکنش‌های در انتظار
-      this.prisma.transaction.findMany({
-        where: { ...baseWhere, status: TransactionStatus.UPCOMING },
-        take: 20,
-        orderBy: { dueDate: 'desc' },
-        include: { student: { select: { fullName: true } } },
+      // total open ticket master
+      this.prisma.ticket.count({
+        where: {
+          userId: masterId,
+          status: TicketStatus.OPEN,
+        },
       }),
     ]);
 
     const dashboardData = {
-      stats: {
-        totalRevenue: paidRevenue._sum.amount ?? 0,
-        feeRevenue: feeRevenue._sum.amount ?? 0,
-        equipmentRevenue: equipmentRevenue._sum.amount ?? 0,
-        unpaidTotal: unpaidStats._sum.amount ?? 0,
-        unpaidCount: unpaidStats._count.id ?? 0,
-        upcomingTotal: upcomingStats._sum.amount ?? 0,
-        upcomingCount: upcomingStats._count.id ?? 0,
+      statusData: {
+        paid: Number(paidStats._sum.amount || 0),
+        unpaid: Number(unpaidStats._sum.amount || 0),
+        pending: Number(pendingStats._sum.amount || 0),
+        upcoming: Number(upcomingStats._sum.amount || 0),
+        counts: {
+          unpaid: Number(unpaidStats._count.id || 0),
+          pending: Number(pendingStats._count.id || 0),
+          upcoming: Number(upcomingStats._count.id || 0),
+        },
       },
-      charts: {
-        revenueByType: [
-          { type: 'شهریه', total: feeRevenue._sum.amount ?? 0 },
-          { type: 'تجهیزات', total: equipmentRevenue._sum.amount ?? 0 },
-        ],
-      },
-      lists: {
-        paidTransactions,
-        unpaidTransactions,
-        upcomingTransactions,
+      chartData: [
+        { name: 'شهریه', value: Number(feeRevenue._sum.amount || 0) },
+        { name: 'تجهیزات', value: Number(equipmentRevenue._sum.amount || 0) },
+      ],
+      cards: {
+        totalStudents: totalStudents || 0,
+        totalCoaches: totalCoaches || 0,
+        currentMonthRevenue: Number(currentMonthRevenue._sum.amount || 0),
+        openTickets: openTickets || 0,
       },
     };
 
@@ -942,62 +957,50 @@ export class FinancialsService {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [
-      pendingSubscriptionsStats,
-      confirmedRevenueThisMonth,
-      pendingSubscriptionsList,
-      recentlyReviewedList,
-    ] = await Promise.all([
-      // General payment figures pending confirmation
-      // ۱. آمار کلی پرداخت‌های در انتظار تایید
-      this.prisma.subscriptionPayment.aggregate({
-        where: { status: SubscriptionPaymentStatus.PENDING },
-        _sum: { amount: true },
-        _count: { id: true },
-      }),
-      // Total confirmed income from subscriptions in the current month
-      // ۲. مجموع درآمد تایید شده از اشتراک‌ها در ماه جاری
-      this.prisma.subscriptionPayment.aggregate({
-        where: {
-          status: SubscriptionPaymentStatus.CONFIRMED,
-          updatedAt: { gte: startOfMonth },
-        },
-        _sum: { amount: true },
-      }),
-      // Full list of payments pending review
-      // ۳. لیست کامل پرداخت‌های در انتظار برای بازبینی
-      this.prisma.subscriptionPayment.findMany({
-        where: { status: SubscriptionPaymentStatus.PENDING },
-        take: 20,
-        orderBy: { createdAt: 'asc' },
-        include: { master: { select: { fullName: true, user_id: true } } },
-      }),
-      // List of last 10 payments that have been reviewed (confirmed or rejected)
-      // ۴. لیست ۱۰ پرداخت آخری که بازبینی شده‌اند (تایید یا رد شده)
-      this.prisma.subscriptionPayment.findMany({
-        where: {
-          status: {
-            in: [SubscriptionPaymentStatus.CONFIRMED, SubscriptionPaymentStatus.REJECTED],
+    const [pendingRevenueThisMonth, confirmedRevenueThisMonth, rejectRevenueThisMonth] =
+      await Promise.all([
+        // General payment figures pending confirmation
+        // ۱. مجموع درآمد ئر حال انتظار از اشتراک‌ها در ماه جاری
+        this.prisma.subscriptionPayment.aggregate({
+          where: {
+            status: SubscriptionPaymentStatus.PENDING,
+            createdAt: { gte: startOfMonth },
           },
-        },
-        take: 20,
-        orderBy: { updatedAt: 'desc' },
-        include: {
-          master: { select: { fullName: true } },
-          confirmer: { select: { fullName: true } },
-        },
-      }),
-    ]);
+          _sum: { amount: true },
+          _count: { id: true },
+        }),
+        // Total confirmed income from subscriptions in the current month
+        // ۲. مجموع درآمد تایید شده از اشتراک‌ها در ماه جاری
+        this.prisma.subscriptionPayment.aggregate({
+          where: {
+            status: SubscriptionPaymentStatus.CONFIRMED,
+            updatedAt: { gte: startOfMonth },
+          },
+          _sum: { amount: true },
+          _count: { id: true },
+        }),
+        // Total reject income from subscriptions in the current month
+        // ۲. مجموع درآمد رد شده از اشتراک‌ها در ماه جاری
+        this.prisma.subscriptionPayment.aggregate({
+          where: {
+            status: SubscriptionPaymentStatus.REJECTED,
+            updatedAt: { gte: startOfMonth },
+          },
+          _sum: { amount: true },
+          _count: { id: true },
+        }),
+      ]);
 
     const dashboardData = {
-      stats: {
-        pendingSubscriptionsTotal: pendingSubscriptionsStats._sum.amount ?? 0,
-        pendingSubscriptionsCount: pendingSubscriptionsStats._count.id ?? 0,
-        confirmedRevenueThisMonth: confirmedRevenueThisMonth._sum.amount ?? 0,
-      },
-      lists: {
-        pendingSubscriptionPayments: pendingSubscriptionsList,
-        recentlyReviewedPayments: recentlyReviewedList,
+      statusData: {
+        pendingRevenue: Number(pendingRevenueThisMonth._sum.amount || 0),
+        confirmedRevenue: Number(confirmedRevenueThisMonth._sum.amount || 0),
+        rejectRevenue: Number(rejectRevenueThisMonth._sum.amount || 0),
+        counts: {
+          pendingCount: Number(pendingRevenueThisMonth._count.id),
+          confirmedCount: Number(confirmedRevenueThisMonth._count.id),
+          rejectCount: Number(rejectRevenueThisMonth._count.id),
+        },
       },
     };
 

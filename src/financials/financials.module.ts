@@ -37,4 +37,4 @@ import { UsersModule } from 'src/users/users.module';
   providers: [FinancialsService],
   exports: [FinancialsService],
 })
-export class FinancialsModule { }
+export class FinancialsModule {}

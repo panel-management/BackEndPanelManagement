@@ -24,7 +24,7 @@ export class MasterService {
     private readonly prisma: PrismaService,
     private readonly financialsService: FinancialsService,
     private readonly smsService: SmsService,
-  ) { }
+  ) {}
 
   // get master
   async getMaster() {

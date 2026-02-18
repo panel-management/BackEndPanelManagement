@@ -28,7 +28,7 @@ FROM node:20-slim
 WORKDIR /app
 
 # install openssl for prisma
-RUN apt-get update -y && apt-get install -y openssl tzdata
+RUN apt-get update -y && apt-get install -y openssl tzdata postgresql-client
 
 # set timezone
 ENV TZ=Asia/Tehran

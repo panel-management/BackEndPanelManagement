@@ -5,11 +5,9 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class SmsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private readonly SMSIR_API_KEY = process.env.SMSIR_API_KEY;
-  private readonly FARAZSMS_API_KEY = process.env.FARAZSMS_API_KEY;
-  private readonly SMSIR = 'https://api.sms.ir';
   private readonly FARAZSMS = 'https://edge.ippanel.com/v1';
-  private readonly TEMPLATE_ID = Number(process.env.TEMPLATE_ID);
+  private readonly FARAZSMS_API_KEY = process.env.FARAZSMS_API_KEY;
+  private readonly FARAZSMS_PATTERN_CODE = process.env.FARAZSMS_PATTERN_CODE;
 
   async sendMessageToUser(phoneNumber: string, message: string) {
     try {
@@ -41,19 +39,22 @@ export class SmsService {
     }
   }
 
-  async sendOtpCode(userId: number, mobile: string, code: string) {
+  async sendOtpCode(userId: number, phoneNumber: string, code: string) {
     try {
-      const response = await fetch(`${this.SMSIR}/v1/send/verify`, {
+      const response = await fetch(`${this.FARAZSMS}/api/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'text/plain',
-          'x-api-key': this.SMSIR_API_KEY!,
+          Authorization: this.FARAZSMS_API_KEY!,
         },
         body: JSON.stringify({
-          Mobile: mobile,
-          TemplateId: this.TEMPLATE_ID,
-          Parameters: [{ name: 'Code', value: code }],
+          sending_type: 'pattern',
+          from_number: '+983000505',
+          code: this.FARAZSMS_PATTERN_CODE!,
+          recipients: [phoneNumber],
+          params: {
+            code: code,
+          },
         }),
       });
 

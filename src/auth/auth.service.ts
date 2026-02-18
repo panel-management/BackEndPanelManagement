@@ -48,7 +48,7 @@ export class AuthService {
       user = await this.userService.createUser(phoneNumber);
     }
 
-    await this.smsService.sendOtpCode(user.user_id, user.phoneNumber!, otp);
+    await this.smsService.sendOtpCode(user.user_id, user.phoneNumber, otp);
 
     return {
       statusCode: HttpStatus.OK,

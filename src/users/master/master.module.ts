@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { HttpException, HttpStatus, Module } from '@nestjs/common';
 import { MasterController } from './master.controller';
 import { MasterService } from './master.service';
 import { MulterModule } from '@nestjs/platform-express';
@@ -22,10 +22,10 @@ import { FinancialsModule } from 'src/financials/financials.module';
         },
       }),
       fileFilter: (req, file, callback) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|webp)$/)) {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|webp)$/i)) {
           return callback(
-            new Error('فقط فایل های تصویری (jepg, png, webp, jpg) مجاز هستند'),
-            false,
+            new HttpException('فقط فایل های تصویری (jepg, png, webp, jpg) مجاز هستند', HttpStatus.BAD_REQUEST),
+            false
           );
         }
         callback(null, true);
@@ -37,4 +37,4 @@ import { FinancialsModule } from 'src/financials/financials.module';
   providers: [MasterService],
   exports: [MasterService],
 })
-export class MasterModule {}
+export class MasterModule { }

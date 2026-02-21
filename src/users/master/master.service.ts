@@ -24,7 +24,7 @@ export class MasterService {
     private readonly prisma: PrismaService,
     private readonly financialsService: FinancialsService,
     private readonly smsService: SmsService,
-  ) {}
+  ) { }
 
   // get master
   async getMaster() {
@@ -385,15 +385,12 @@ export class MasterService {
     const master = await this.getMasterById(masterId);
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.plan.deleteMany({ where: { masterId: masterId } });
-
-      await tx.ticket.deleteMany({ where: { userId: masterId } });
-
-      await tx.clubProfile.deleteMany({ where: { userId: masterId } });
-
-      await tx.subscriptionPayment.deleteMany({
+      await tx.users.updateMany({
         where: { masterId: masterId },
+        data: { planId: null }
       });
+
+      await tx.plan.deleteMany({ where: { masterId: masterId } });
 
       await tx.users.deleteMany({
         where: {
@@ -402,9 +399,13 @@ export class MasterService {
         },
       });
 
-      await tx.users.delete({
-        where: { user_id: masterId, type: Role.Master },
-      });
+      await tx.ticket.deleteMany({ where: { userId: masterId } });
+
+      await tx.clubProfile.deleteMany({ where: { userId: masterId } });
+
+      await tx.subscriptionPayment.deleteMany({ where: { masterId: masterId } });
+
+      await tx.users.delete({ where: { user_id: masterId, type: Role.Master } });
     });
 
     if (master.data.image) {

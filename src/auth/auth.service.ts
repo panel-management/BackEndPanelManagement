@@ -14,7 +14,7 @@ export class AuthService {
     private readonly userService: UsersService,
     private readonly smsService: SmsService,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   private checkOtpExpiration(requestedAt: Date | null) {
     if (!requestedAt) throw new HttpException('کد تایید یافت نشد', HttpStatus.UNAUTHORIZED);

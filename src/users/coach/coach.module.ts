@@ -22,7 +22,10 @@ import { extname } from 'path';
       fileFilter: (req, file, callback) => {
         if (!file.originalname.match(/\.(jpg|jpeg|png|webp)$/i)) {
           return callback(
-            new HttpException('فقط فایل های تصویری (jepg, png, webp, jpg) مجاز هستند', HttpStatus.BAD_REQUEST),
+            new HttpException(
+              'فقط فایل های تصویری (jepg, png, webp, jpg) مجاز هستند',
+              HttpStatus.BAD_REQUEST,
+            ),
             false,
           );
         }
@@ -34,4 +37,4 @@ import { extname } from 'path';
   providers: [CoachService],
   controllers: [CoachController],
 })
-export class CoachModule { }
+export class CoachModule {}

@@ -24,7 +24,7 @@ export class MasterService {
     private readonly prisma: PrismaService,
     private readonly financialsService: FinancialsService,
     private readonly smsService: SmsService,
-  ) { }
+  ) {}
 
   // get master
   async getMaster() {
@@ -387,7 +387,7 @@ export class MasterService {
     await this.prisma.$transaction(async (tx) => {
       await tx.users.updateMany({
         where: { masterId: masterId },
-        data: { planId: null }
+        data: { planId: null },
       });
 
       await tx.plan.deleteMany({ where: { masterId: masterId } });

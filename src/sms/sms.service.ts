@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class SmsService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private readonly FARAZSMS = 'https://edge.ippanel.com/v1';
   private readonly FARAZSMS_API_KEY = process.env.FARAZSMS_API_KEY;

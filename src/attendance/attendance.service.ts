@@ -153,8 +153,8 @@ export class AttendanceService {
         userId: user.user_id,
         fullName: user.fullName,
         role: user.type === Role.Coach ? 'مربی' : 'هنرجو',
-        status: attendanceRecord ? attendanceRecord.status : null,
-        belt: user.currentBelt?.color || 'بدون کمربند',
+        status: attendanceRecord?.status,
+        belt: user.currentBelt?.color,
       };
     });
 
@@ -212,7 +212,7 @@ export class AttendanceService {
           status: true,
           date: true,
           createdAt: true,
-          student: { select: { fullName: true } },
+          student: { select: { fullName: true, type: true } },
         },
         skip: (page - 1) * limit,
         take: limit,

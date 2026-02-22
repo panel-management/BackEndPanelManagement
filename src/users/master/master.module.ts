@@ -24,8 +24,11 @@ import { FinancialsModule } from 'src/financials/financials.module';
       fileFilter: (req, file, callback) => {
         if (!file.originalname.match(/\.(jpg|jpeg|png|webp)$/i)) {
           return callback(
-            new HttpException('فقط فایل های تصویری (jepg, png, webp, jpg) مجاز هستند', HttpStatus.BAD_REQUEST),
-            false
+            new HttpException(
+              'فقط فایل های تصویری (jepg, png, webp, jpg) مجاز هستند',
+              HttpStatus.BAD_REQUEST,
+            ),
+            false,
           );
         }
         callback(null, true);
@@ -37,4 +40,4 @@ import { FinancialsModule } from 'src/financials/financials.module';
   providers: [MasterService],
   exports: [MasterService],
 })
-export class MasterModule { }
+export class MasterModule {}

@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
 # set the worker directory inside the container
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # install postgresql
 RUN apk add --no-cache postgresql-client

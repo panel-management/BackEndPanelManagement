@@ -1,83 +1,86 @@
+import { HttpService } from '@nestjs/axios';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { lastValueFrom } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class SmsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly httpService: HttpService) { }
 
-  private readonly FARAZSMS = 'https://edge.ippanel.com/v1';
+  private readonly FARAZSMS = 'https://api.iranpayamak.com';
   private readonly FARAZSMS_API_KEY = process.env.FARAZSMS_API_KEY;
   private readonly FARAZSMS_PATTERN_CODE = process.env.FARAZSMS_PATTERN_CODE;
 
-  async sendMessageToUser(phoneNumber: string, message: string) {
+  async SendSmsMassageInfo(url: string, message: string, phoneNumber: string): Promise<string> {
     try {
-      const response = await fetch(`${this.FARAZSMS}/api/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: this.FARAZSMS_API_KEY!,
-        },
-        body: JSON.stringify({
-          sending_type: 'webservice',
-          from_number: '+983000505',
-          message: message,
-          params: {
-            recipients: [phoneNumber],
-          },
-        }),
-      });
+      const numberFormat = /^[0-9]+$/.test(phoneNumber) ? 'english' : 'persian';
 
-      const data = await response.json();
+      const payload = {
+        line_number: '90008361',
+        text: message,
+        recipients: [phoneNumber],
+        number_format: numberFormat,
+        schedule: null
+      };
 
-      if (!response.ok) {
-        throw new HttpException(data, HttpStatus.INTERNAL_SERVER_ERROR);
+      const abservable = this.httpService.post(url, payload, { headers: { "Content-Type": "application/json", "Accept": "application/json", "Api-Key": this.FARAZSMS_API_KEY } })
+      const result = await lastValueFrom(abservable)
+
+      if (result.status) {
+        return result.data
+      } else {
+        throw new HttpException(result, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      return data;
     } catch (error: any) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  async sendOtpCode(userId: number, phoneNumber: string, code: string) {
+  async SendSmsPattern(url: string, phoneNumber: string, code?: string): Promise<string> {
     try {
-      const response = await fetch(`${this.FARAZSMS}/api/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: this.FARAZSMS_API_KEY!,
+      const numberFormat = /^[0-9]+$/.test(phoneNumber) ? 'english' : 'persian';
+
+      const payload = {
+        code: this.FARAZSMS_PATTERN_CODE,
+        attributes: {
+          code: code
         },
-        body: JSON.stringify({
-          sending_type: 'pattern',
-          from_number: '+983000505',
-          code: this.FARAZSMS_PATTERN_CODE,
-          recipients: [phoneNumber],
-          params: {
-            code: code,
-          },
-        }),
-      });
+        recipient: phoneNumber,
+        line_number: '90008361',
+        number_format: numberFormat,
+      };
 
-      const data = await response.json();
+      const abservable = this.httpService.post(url, payload, { headers: { "Content-Type": "application/json", "Accept": "application/json", "Api-Key": this.FARAZSMS_API_KEY } })
+      const result = await lastValueFrom(abservable)
 
-      if (!response.ok) {
-        throw new HttpException(data, HttpStatus.INTERNAL_SERVER_ERROR);
+      if (result.status) {
+        return result.data
+      } else {
+        throw new HttpException(result, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      await this.prisma.users.update({
-        where: { user_id: userId },
-        data: {
-          code: code,
-          codeRequestedAt: new Date(),
-        },
-      });
-
-      return data;
     } catch (error: any) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
+  async sendMessageToUser(phoneNumber: string, message: string): Promise<string> {
+    return await this.SendSmsMassageInfo(`${this.FARAZSMS}/ws/v1/sms/simple`, message, phoneNumber);
+  }
+
+  async sendOtpCode(userId: number, phoneNumber: string, code: string): Promise<string | number> {
+    await this.prisma.users.update({
+      where: { user_id: userId },
+      data: {
+        code: code,
+        codeRequestedAt: new Date(),
+      },
+    });
+
+    return await this.SendSmsPattern(`${this.FARAZSMS}/ws/v1/sms/pattern`, phoneNumber, code)
+  }
+  
   async clearOtp(userId: number): Promise<void> {
     await this.prisma.users.update({
       where: { user_id: userId },

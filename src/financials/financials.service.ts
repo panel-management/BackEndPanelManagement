@@ -184,7 +184,7 @@ export class FinancialsService {
         type: Role.Student,
         studentTransactions: {
           some: {
-            status: TransactionStatus.UNPAID,
+            status: { in: [TransactionStatus.UNPAID, TransactionStatus.PENDING] },
             type: TransactionType.FEE,
           },
         },
@@ -192,7 +192,7 @@ export class FinancialsService {
       include: {
         studentTransactions: {
           where: {
-            status: TransactionStatus.UNPAID,
+            status: { in: [TransactionStatus.UNPAID, TransactionStatus.PENDING] },
             type: TransactionType.FEE,
           },
         },

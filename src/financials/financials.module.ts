@@ -33,7 +33,7 @@ import { UsersModule } from 'src/users/users.module';
         }
         callback(null, true);
       },
-      limits: { fileSize: 1024 * 1024 * 2 },
+      limits: { fileSize: 1024 * 1024 * 1 },
     }),
   ],
   controllers: [FinancialsController],

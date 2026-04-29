@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDate, IsInt, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
 
 export class UpdateStudentDto {
   @IsString()
@@ -20,11 +20,11 @@ export class UpdateStudentDto {
   @Type(() => Number)
   age?: number;
 
-  @IsString()
+  @IsPhoneNumber("IR", { message: "شماره تلفن معتبر وارد کنید" })
   @IsOptional()
   phoneNumber?: string;
 
-  @IsString()
+  @IsPhoneNumber("IR", { message: "شماره تلفن معتبر وارد کنید" })
   @IsOptional()
   phoneNumberEmergency?: string;
 

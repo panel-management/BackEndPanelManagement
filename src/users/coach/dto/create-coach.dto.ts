@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsInt, IsNotEmpty, IsString, Matches } from 'class-validator';
+import { IsDate, IsInt, IsNotEmpty, IsPhoneNumber, IsString, Matches } from 'class-validator';
 
 export class CreateCoachDto {
   @IsString()
@@ -10,7 +10,7 @@ export class CreateCoachDto {
   @IsNotEmpty({ message: 'کد ملی الزامی است' })
   nationalCode: string;
 
-  @IsString()
+  @IsPhoneNumber("IR", { message: "شماره تلفن معتبر وارد کنید" })
   @IsNotEmpty({ message: 'شماره تلفن الزامی است' })
   @Matches(/^09\d{9}$/, { message: 'فرمت شماره تلفن نامعتبر است' })
   phoneNumber: string;

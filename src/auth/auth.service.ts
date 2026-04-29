@@ -14,7 +14,7 @@ export class AuthService {
     private readonly userService: UsersService,
     private readonly smsService: SmsService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   private checkOtpExpiration(requestedAt: Date | null) {
     if (!requestedAt) throw new HttpException('کد تایید یافت نشد', HttpStatus.UNAUTHORIZED);
@@ -62,7 +62,7 @@ export class AuthService {
 
     if (!user || !user.fullName) {
       throw new HttpException(
-        'کاربر یافت نشد یا ثبت‌ نام تکمیل نشده لطفا ابتدا ثبت‌ نام کنید',
+        'ثبت‌ نام تکمیل نشده لطفا ابتدا ثبت‌ نام کنید',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -92,7 +92,7 @@ export class AuthService {
     const user = await this.userService.findByPhoneNumber(phoneNumber);
 
     if (!user) {
-      throw new HttpException('کاربر یافت نشد لطفا ابتدا ثبت‌ نام کنید', HttpStatus.NOT_FOUND);
+      throw new HttpException('ثبت‌ نام تکمیل نشده لطفا ابتدا ثبت‌ نام کنید', HttpStatus.NOT_FOUND);
     }
 
     this.checkOtpExpiration(user.codeRequestedAt);
@@ -115,15 +115,11 @@ export class AuthService {
 
     await this.smsService.clearOtp(user.user_id);
 
-    try {
-      await this.smsService.sendMessageToUser(
-        phoneNumber,
-        `سلام مدیر محترم ${fullName}
+    await this.smsService.sendMessageToUser(
+      phoneNumber,
+      `سلام مدیر محترم ${fullName}
 ثبت نام شما با موفقیت انجام شد لطف برای استفاده از پنل باشگاه هوشمند اطلاعات خود را تکمیل کنید✅`,
-      );
-    } catch (error) {
-      console.error(`ارسال پیامک خوش آمدگویی به ${phoneNumber} ناموفق بود:`, error);
-    }
+    );
 
     const payload = {
       sub: updateUser.user_id,

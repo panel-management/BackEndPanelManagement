@@ -7,6 +7,7 @@ import {
   IsInt,
   IsBoolean,
   IsDate,
+  IsPhoneNumber,
 } from 'class-validator';
 
 export class CreateStudentDto {
@@ -28,12 +29,12 @@ export class CreateStudentDto {
   @Type(() => Date)
   birthDate: Date;
 
-  @IsString()
+  @IsPhoneNumber("IR", { message: "شماره تلفن معتبر وارد کنید" })
   @IsNotEmpty({ message: 'شماره تلفن الزامی است' })
   @Matches(/^09\d{9}$/, { message: 'فرمت شماره تلفن نامعتبر است' })
   phoneNumber: string;
 
-  @IsString()
+  @IsPhoneNumber("IR", { message: "شماره تلفن معتبر وارد کنید" })
   @IsNotEmpty({ message: 'شماره تلفن اضطراری الزامی است' })
   @Matches(/^09\d{9}$/, { message: 'فرمت شماره تلفن نامعتبر است' })
   phoneNumberEmergency: string;

@@ -15,12 +15,12 @@ export class ClubProfileService {
     });
 
     if (!profile) {
-      throw new HttpException('پروفایل باشگاه هنوز ایجاد نشده است', HttpStatus.NOT_FOUND);
+      throw new HttpException('لطف پروفایل باشگاه خود را تکمیل کنید', HttpStatus.NOT_FOUND);
     }
 
     return {
       statusCode: HttpStatus.OK,
-      message: 'اطلاعات پروفایل باشگاه با موفقیت دریافت شد',
+      message: 'پروفایل باشگاه با موفقیت دریافت شد',
       data: profile,
     };
   }
@@ -39,6 +39,31 @@ export class ClubProfileService {
       throw new HttpException('پروفایل باشگاه شما قبلا تکمیل شده است', HttpStatus.FORBIDDEN);
     }
 
+    const clubProfile = await this.prisma.clubProfile.create({
+      data: {
+        userId: masterId,
+        ...dto,
+        socialNetworks: dto.socialNetworks ? (dto.socialNetworks as Prisma.JsonObject) : undefined,
+        isProfileComplete: true
+      }
+    })
+
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'پروفایل باشگاه با موفقیت تکمیل شد',
+      data: clubProfile,
+    };
+  }
+
+  async updateClubProfile(masterId: number, dto: UpdateProfileDto) {
+    const user = await this.prisma.users.findUnique({
+      where: { user_id: masterId, type: Role.Master }
+    });
+
+    if (!user) {
+      throw new HttpException('کاربر با این مشخصات پیدا نشد', HttpStatus.NOT_FOUND);
+    }
+
     const clubProfile = await this.prisma.clubProfile.upsert({
       where: { userId: masterId },
       create: {
@@ -55,32 +80,8 @@ export class ClubProfileService {
     });
 
     return {
-      statusCode: HttpStatus.CREATED,
-      message: 'اطلاعات باشگاه با موفقیت تکمیل شد',
-      data: clubProfile,
-    };
-  }
-
-  async updateClubProfile(masterId: number, dto: UpdateProfileDto) {
-    const profile = await this.prisma.clubProfile.findUnique({
-      where: { userId: masterId, user: { type: Role.Master } },
-    });
-
-    if (!profile) {
-      throw new HttpException('پروفایل استاد با این مشخصات پیدا نشد', HttpStatus.NOT_FOUND);
-    }
-
-    const clubProfile = await this.prisma.clubProfile.update({
-      where: { userId: masterId },
-      data: {
-        ...dto,
-        socialNetworks: dto.socialNetworks ? (dto.socialNetworks as Prisma.JsonObject) : undefined,
-      },
-    });
-
-    return {
       statusCode: HttpStatus.OK,
-      message: 'اطلاعات باشگاه با موفقیت اپدیت شد',
+      message: 'پروفایل باشگاه با موفقیت بروزرسانی شد',
       data: clubProfile,
     };
   }

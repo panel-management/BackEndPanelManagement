@@ -112,6 +112,7 @@ export class MasterService {
           orderBy: {
             createdAt: 'desc',
           },
+          take: 20
         },
         createdAt: true,
         updatedAt: true,
@@ -164,6 +165,7 @@ export class MasterService {
           orderBy: {
             createdAt: 'desc',
           },
+          take: 20
         },
         createdAt: true,
         updatedAt: true,
@@ -248,15 +250,6 @@ export class MasterService {
           },
         });
 
-        if (master.phoneNumber) {
-          this.smsService.sendMessageToUser(
-            master.phoneNumber,
-            `سلام مدیر محترم ${master.fullName}
-  پلن آزمایشی "${plan.name}" برای شما فعال شد.
-  تاریخ انقضا: ${updatedMaster.planEndsAt?.toLocaleDateString('fa-IR')}`,
-          );
-        }
-
         return {
           statusCode: HttpStatus.OK,
           message: `${plan.name} با موفقیت فعال شد`,
@@ -271,15 +264,6 @@ export class MasterService {
           planEndsAt: null,
         },
       });
-
-      if (master.phoneNumber) {
-        this.smsService.sendMessageToUser(
-          master.phoneNumber,
-          `سلام مدیر محترم ${master.fullName}
-  پلن "${plan.name}" برای شما انتخاب شد.
-  لطفاً جهت فعال‌سازی، هزینه ${Number(plan.price).toLocaleString('fa-IR')} تومان را پرداخت و رسید آن را ارسال نمایید.`,
-        );
-      }
 
       return {
         statusCode: HttpStatus.OK,

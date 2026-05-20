@@ -1089,7 +1089,7 @@ export class FinancialsService {
 
       await this.smsService.sendMessageToUser(
         master.phoneNumber,
-        `مدیر محترم سلام ${master.fullName}
+        `مدیر محترم ${master.fullName}
 درخواست پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان با موفقیت ثبت شد. پس از تایید پرداخت، پلن شما فعال خواهد شد.
 با تشکر.`,
       );
@@ -1160,7 +1160,7 @@ export class FinancialsService {
           },
         });
 
-        message = `مدیر محترم سلام ${payment.master.fullName}
+        message = `مدیر محترم ${payment.master.fullName}
 پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان با موفقیت تایید شد.
 پلن "${payment.plan.name}" شما فعال شد.
 تاریخ انقضا: ${planEndsAt.toLocaleDateString('fa-IR')}`;
@@ -1173,7 +1173,7 @@ export class FinancialsService {
           },
         });
 
-        message = `مدیر محترم سلام ${payment.master.fullName}
+        message = `مدیر محترم ${payment.master.fullName}
 متاسفانه پرداخت اشتراک شما به مبلغ ${formattedAmount} تومان رد شد.
 دلیل: ${reviewDto.adminNotes || 'دلیل ذکر نشده'}
 لطفاً مجدداً اقدام به پرداخت کنید.`;

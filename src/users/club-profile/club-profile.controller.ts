@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Put,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { ClubProfileService } from './club-profile.service';
@@ -35,7 +25,7 @@ export class ClubProfileController {
     return this.clubProfile.completeClubProfile(req.user.userId, completeProfileDto);
   }
 
-  @Put('update-profile-club')
+  @Post('update-profile-club')
   @HttpCode(HttpStatus.OK)
   updateClubProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDto) {
     return this.clubProfile.updateClubProfile(req.user.userId, updateProfileDto);

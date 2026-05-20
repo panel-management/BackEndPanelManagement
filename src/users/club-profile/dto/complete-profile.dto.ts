@@ -32,7 +32,7 @@ export class CompleteProfileDto {
   clubName: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'حوضه فعالیت الزامی است' })
+  @IsNotEmpty({ message: 'حوضه فعالیت باشگاه الزامی است' })
   activityType: string;
 
   @IsString()

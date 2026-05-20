@@ -113,6 +113,7 @@ export class StudentService {
         studentTransactions: {
           where: { type: TransactionType.FEE },
           orderBy: { paymentDate: 'desc' },
+          take: 20
         },
         type: true,
         masterId: true,

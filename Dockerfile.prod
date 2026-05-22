@@ -1,48 +1,53 @@
 # ---- Builder Stage ----
 FROM node:22-slim AS Builder
 
+# enable corepack pnpm
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+
+# set the worker directory inside the container
 WORKDIR /app
 
 # install openssl for prisma
 RUN apt-get update -y && apt-get install -y openssl
 
-# install pnpm
-RUN npm install -g pnpm
-
 # copy file package for instaling package
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 COPY prisma ./prisma/
 
 # install package
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile --ignore-scripts=false
 
 COPY . .
 
 # running prisma generate for build project
-RUN pnpm prisma generate
+RUN npx prisma@6.19.1 generate
 RUN pnpm build
 
 # ---- Production Stage ----
 FROM node:22-slim AS Production
 
+# enable corepack pnpm
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+
+# set the worker directory inside the container
 WORKDIR /app
 
-# install openssl for prisma
+# install openssl for prisma and postgresql and tzdata
 RUN apt-get update -y && apt-get install -y openssl tzdata postgresql-client
 
 # set timezone
 ENV TZ=Asia/Tehran
 
-# install pm2 and pnpm
-RUN npm install -g pnpm pm2
+# install package pm2
+RUN npm install -g pm2
 
-# copy file
-COPY package.json pnpm-lock.yaml ./
+# copy file package for instaling package
+COPY package.json ./
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
 # install package prodcution
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --no-frozen-lockfile --ignore-scripts=false
 
 # running prisma generate
 RUN npx prisma@6.19.1 generate

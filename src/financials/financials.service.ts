@@ -32,7 +32,7 @@ export class FinancialsService {
     private readonly smsService: SmsService,
     @Inject(forwardRef(() => UsersService))
     private readonly userService: UsersService,
-  ) {}
+  ) { }
 
   private readonly logger = new Logger(FinancialsService.name);
 
@@ -63,8 +63,8 @@ export class FinancialsService {
 
       const daysSinceLastFee = student.lastFeeGenerated
         ? Math.floor(
-            (now.getTime() - new Date(student.lastFeeGenerated).getTime()) / (1000 * 60 * 60 * 24),
-          )
+          (now.getTime() - new Date(student.lastFeeGenerated).getTime()) / (1000 * 60 * 60 * 24),
+        )
         : 0;
 
       if (
@@ -372,7 +372,12 @@ export class FinancialsService {
 
   // list all plan active and disable
   async findAllMasterPlansForAdmin() {
-    const planMaster = await this.prisma.masterPlan.findMany();
+    const planMaster = await this.prisma.masterPlan.findMany({
+      orderBy: [
+        { createdAt: "asc" },
+        { updatedAt: "asc" }
+      ]
+    });
 
     return {
       statusCode: HttpStatus.OK,
@@ -385,6 +390,10 @@ export class FinancialsService {
   async findActiveMasterPlans() {
     const planMaster = await this.prisma.masterPlan.findMany({
       where: { isActive: true },
+      orderBy: [
+        { createdAt: "asc" },
+        { updatedAt: "asc" }
+      ]
     });
 
     return {

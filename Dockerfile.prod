@@ -7,10 +7,13 @@ RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 # set the worker directory inside the container
 WORKDIR /app
 
+# set environment development for install package
+ENV NODE_ENV=development
+
 # install openssl for prisma
 RUN apt-get update -y && apt-get install -y openssl
 
-# copy file package for instaling package
+# copy file package for installing package
 COPY package.json ./
 COPY prisma ./prisma/
 
@@ -41,12 +44,12 @@ ENV TZ=Asia/Tehran
 # install package pm2
 RUN npm install -g pm2
 
-# copy file package for instaling package
+# copy file package for installing package
 COPY package.json ./
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
+COPY --from=Builder /app/dist ./dist
+COPY --from=Builder /app/prisma ./prisma
 
-# install package prodcution
+# install package production
 RUN pnpm install --prod --no-frozen-lockfile --ignore-scripts=false
 
 # running prisma generate

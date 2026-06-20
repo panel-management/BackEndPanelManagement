@@ -1,6 +1,7 @@
 node_modules
 npm-debug.log
-.dockerignore
+.env
 Dockerfile.dev
 Dockerfile.prod
+Dockerfile
 docker-compose.yml

@@ -26,8 +26,6 @@ services:
     container_name: club_panel_prod
     ports:
       - "80:3000"
-    env_file:
-      - .env
     environment:
       - NODE_ENV=production
       - TZ=Asia/Tehran

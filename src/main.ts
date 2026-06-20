@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
-import helmet from 'helmet';
 import compression from 'compression';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AllExceptionFilter } from './common/filters/all-exception.filter';
@@ -11,29 +10,30 @@ import { DocumentBuilder, SwaggerCustomOptions, SwaggerModule } from '@nestjs/sw
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  const isProd = process.env.NODE_ENV === 'production';
+  // const isProd = process.env.NODE_ENV === 'production';
+
+  // app.use(
+  //   helmet({
+  //     contentSecurityPolicy: isProd ? undefined : false,
+  //     crossOriginEmbedderPolicy: isProd,
+  //     crossOriginResourcePolicy: {
+  //       policy: 'cross-origin',
+  //     },
+  //   }),
+  // );
 
   const config = new DocumentBuilder()
     .setTitle('club')
     .setDescription('panel management club')
     .setVersion('1.0.0')
-    .build()
-
-  app.use(
-    helmet({
-      contentSecurityPolicy: isProd ? undefined : false,
-      crossOriginEmbedderPolicy: isProd,
-      crossOriginResourcePolicy: {
-        policy: 'cross-origin',
-      },
-    }),
-  );
+    .build();
 
   app.use(compression());
 
   app.enableCors({
     origin: process.env.CORS_ORIGIN,
-    methods: 'GET,PUT,POST,DELETE',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
     credentials: true,
   });
 
@@ -64,9 +64,9 @@ async function bootstrap() {
     useGlobalPrefix: true,
     explorer: true,
     swaggerOptions: {
-      persistAuthorization: true
-    }
-  }
+      persistAuthorization: true,
+    },
+  };
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('/', app, documentFactory, configSwagger);

@@ -28,7 +28,7 @@ import { join } from 'path';
       throttlers: [
         {
           ttl: 60,
-          limit: 20,
+          limit: 10,
         },
       ],
     }),

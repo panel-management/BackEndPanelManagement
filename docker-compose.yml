@@ -9,7 +9,7 @@ services:
     ports:
       - "8000:3000"
     volumes:
-      - ./src:/usr/src/app/src
+      - ./src:/app/src
     env_file:
       - .env
     environment:

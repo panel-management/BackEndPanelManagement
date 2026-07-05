@@ -1,7 +1,7 @@
 FROM node:22-alpine AS Development
 
 # enable corepack pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+RUN corepack enable && corepack prepare pnpm --activate
 
 # set the worker directory inside the container
 WORKDIR /app
@@ -9,7 +9,7 @@ WORKDIR /app
 # install postgresql
 RUN apk add --no-cache postgresql-client
 
-COPY package*.json ./
+COPY package*.json pnpm*.yaml ./
 
 # copy the  rest of the application
 COPY . .

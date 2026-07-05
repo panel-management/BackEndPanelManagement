@@ -1,4 +1,19 @@
 services:
+  # database
+  postgres_db:
+    image: postgres:18-alpine
+    container_name: club_postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: typescript
+      POSTGRES_DB: club_management
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    profiles:
+      - dev
   # development
   app-dev:
     build:
@@ -7,7 +22,7 @@ services:
     image: dev:latest
     container_name: club_panel_dev
     ports:
-      - "8000:3000"
+      - '8000:3000'
     volumes:
       - ./src:/app/src
     env_file:
@@ -15,6 +30,8 @@ services:
     environment:
       - NODE_ENV=development
       - TZ=Asia/Tehran
+    depends_on:
+      - postgres_db
     profiles:
       - dev
   # production
@@ -25,9 +42,12 @@ services:
     image: prod:latest
     container_name: club_panel_prod
     ports:
-      - "80:3000"
+      - '80:3000'
     environment:
       - NODE_ENV=production
       - TZ=Asia/Tehran
     profiles:
       - prod
+
+volumes:
+  postgres_data:

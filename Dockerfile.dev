@@ -11,11 +11,11 @@ RUN apk add --no-cache postgresql-client
 
 COPY package*.json pnpm*.yaml ./
 
-# copy the  rest of the application
-COPY . .
-
 # install package
 RUN pnpm install
+
+# copy the  rest of the application
+COPY . .
 
 # port the app runs on
 EXPOSE 3000

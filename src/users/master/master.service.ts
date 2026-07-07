@@ -187,7 +187,7 @@ export class MasterService {
     };
   }
 
-  // select plan for master just admin
+  // select plan himself master
   async assignPlanToMaster(masterId: number, planId: number) {
     const [master, plan] = await Promise.all([
       this.prisma.users.findUnique({ where: { user_id: masterId } }),
@@ -273,16 +273,6 @@ export class MasterService {
     });
   }
 
-  // select plan himself master
-  async selectPlanHimSelf(masterId: number, planId: number) {
-    const assignResult = await this.assignPlanToMaster(masterId, planId);
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'پلن انتخاب شده با موفقیت ثبت شد',
-      data: assignResult.data,
-    };
-  }
-
   // update Master Just Admin And Master
   async updateMaster(
     masterId: number,
@@ -355,11 +345,11 @@ export class MasterService {
       },
     });
 
-    const statusMessage = changeStatus.isActive ? 'فعال' : 'غیر فعال';
+    const statusMessage = changeStatus.isActive ? 'فعال' : 'غیرفعال';
 
     return {
       statusCode: HttpStatus.OK,
-      message: `وضعیت مربی با موفقیت به ${statusMessage} تغییر یافت`,
+      message: `وضعیت استاد با موفقیت به ${statusMessage} تغییر یافت`,
       data: changeStatus,
     };
   }

@@ -14,7 +14,7 @@ export class CompleteRegistrationDto extends VerifyOtpDto {
   @IsNotEmpty({ message: 'کدملی نمی تواند خالی باشد' })
   nationalCode: string;
 
-  @ApiProperty({ example: 25, type: Number, minLength: 1, maxLength: 1 })
+  @ApiProperty({ example: 25, type: Number })
   @IsInt({ message: 'شناسه ورزش باید یک عدد باشد' })
   @IsNotEmpty({ message: 'ورزش نمی تواند خالی باشد' })
   @Type(() => Number)

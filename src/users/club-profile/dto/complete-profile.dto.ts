@@ -57,7 +57,7 @@ export class CompleteProfileDto {
   @IsNotEmpty({ message: 'شماره تلفن باشگاه الزامی است' })
   clubPhoneNumber?: string;
 
-  @ApiProperty({ example: '2026/06/07' })
+  @ApiProperty({ type: Date })
   @IsDate()
   @IsNotEmpty({ message: 'تاریخ ایجاد باشگاه الزامی است' })
   @Type(() => Date)

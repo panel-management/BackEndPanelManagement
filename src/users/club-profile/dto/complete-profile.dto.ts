@@ -52,9 +52,9 @@ export class CompleteProfileDto {
   @IsNotEmpty({ message: 'درباره باشگاه الزامی است' })
   aboutClub: string;
 
-  @ApiPropertyOptional({ example: '05123456789' })
+  @ApiProperty({ example: '05123456789' })
   @IsString()
-  @IsOptional()
+  @IsNotEmpty({ message: 'شماره تلفن باشگاه الزامی است' })
   clubPhoneNumber?: string;
 
   @ApiProperty({ example: '2026/06/07' })
@@ -63,9 +63,9 @@ export class CompleteProfileDto {
   @Type(() => Date)
   foundationDate: Date;
 
-  @ApiPropertyOptional({ example: 'هدف باشگاه ترویج سلامت و نشاط' })
+  @ApiProperty({ example: 'هدف باشگاه ترویج سلامت و نشاط' })
   @IsString()
-  @IsOptional()
+  @IsNotEmpty({ message: 'هدف باشگاه الزامی است' })
   goal?: string;
 
   @ApiPropertyOptional({ examples: SocialNetworksDto })

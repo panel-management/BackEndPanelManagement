@@ -85,7 +85,7 @@ export class AttendanceService {
     const date = this.getStartOfTodayUTC();
 
     if (!masterId || isNaN(masterId)) {
-      throw new HttpException('شناسه مربی نامعتبر یا نامعتبر شده است', HttpStatus.BAD_REQUEST);
+      throw new HttpException('شناسه این استاد نامعتبر است', HttpStatus.BAD_REQUEST);
     }
 
     await this.prisma.$transaction(

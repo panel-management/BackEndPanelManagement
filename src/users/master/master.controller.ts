@@ -99,6 +99,7 @@ export class MasterController {
               type: 'string',
               format: 'binary',
               nullable: true,
+              description: 'اختیاری',
             },
           },
           required: [],
@@ -138,6 +139,7 @@ export class MasterController {
               type: 'string',
               format: 'binary',
               nullable: true,
+              description: "اختیاری"
             },
           },
           required: [],
@@ -158,8 +160,8 @@ export class MasterController {
 
   // change status master for admin
   @Put('changeStatus/:id')
-  @ApiOperation({ summary: "تغییر وضعیت اکانت مستر توسط ادمین" })
-  @ApiOkResponse({ description: "وضعیت اکانت مستر با موفقیت انجام شد" })
+  @ApiOperation({ summary: 'تغییر وضعیت اکانت مستر توسط ادمین' })
+  @ApiOkResponse({ description: 'وضعیت اکانت مستر با موفقیت انجام شد' })
   @ApiForbiddenResponse({ description: 'کاربر مورد نظر از نوع استاد نیست' })
   @ApiNotFoundResponse({ description: 'استادی با این مشخصات یافت نشد' })
   @ApiParam({ name: 'id', type: Number, example: 3 })
@@ -175,25 +177,25 @@ export class MasterController {
 
   // select plan himself master
   @Put('my-plan')
-  @ApiOperation({ summary: "انتخاب پلن توسط خود مستر" })
-  @ApiOkResponse({ 
+  @ApiOperation({ summary: 'انتخاب پلن توسط خود مستر' })
+  @ApiOkResponse({
     description: `
     پلن ازمایشی با موفقیت فعال شد
     پلن پولی انتخاب شد لطفاً برای فعال‌سازی، هزینه را پرداخت کنید
-    ` 
+    `,
   })
-  @ApiNotFoundResponse({ 
+  @ApiNotFoundResponse({
     description: `
     استاد با این مشخصات یافت نشد
     پلن اشتراک یافت نشد
-    ` 
+    `,
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: `
     امکان اختصاص پلن به این کاربر وجود ندارد
     شما یک پرداخت در انتظار تایید دارید لطفا صبر کنید تا پرداخت قبلی بررسی شود
     کاربر گرامی شما قبلا پلن رایگان را استفاده کرده اید
-    `
+    `,
   })
   @ApiBody({ type: AssignMasterPlanDto })
   @Roles(Role.Master)

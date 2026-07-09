@@ -313,7 +313,7 @@ export class CoachService {
       },
     });
 
-    const statusMessage = changeStatus.isActive ? 'فعال' : 'غیر فعال';
+    const statusMessage = changeStatus.isActive ? 'فعال' : 'غیرفعال';
 
     return {
       statusCode: HttpStatus.OK,

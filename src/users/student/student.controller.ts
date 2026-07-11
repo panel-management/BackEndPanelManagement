@@ -22,14 +22,34 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
 import { UpdateStatusDto } from 'src/common/dto/updateStatus.dto';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+} from '@nestjs/swagger';
 
 @Controller('student')
+@ApiBearerAuth('authorization')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class StudentController {
   constructor(private readonly studentService: StudentService) {}
 
   // get All Students for Master
   @Get()
+  @ApiOperation({
+    summary: 'نمایش لیست هنرجو های مستر',
+    description: `
+    نمونه درخواست:
+    GET /api/v1/student?page=1&limit=10
+    `,
+  })
+  @ApiOkResponse({ description: 'لیست هنرجو ها با موفقیت دریافت شد' })
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   getAllStudent(@Req() req, @Query() pageQueryDto: PaginationQueryDto) {
@@ -38,6 +58,9 @@ export class StudentController {
 
   // See You Profile Just yourself student
   @Get('details')
+  @ApiOperation({ summary: 'نمایش پروفایل توسط هنرجو' })
+  @ApiOkResponse({ description: 'پروفایل با موفقیت نمایش داد شد' })
+  @ApiNotFoundResponse({ description: 'هنرجویی با این مشخاصت یافت نشد' })
   @Roles(Role.Student)
   @HttpCode(HttpStatus.OK)
   getStudentById(@Req() req) {
@@ -46,6 +69,10 @@ export class StudentController {
 
   // See Student Profile by Id for Master
   @Get(':id')
+  @ApiOperation({ summary: 'نمایش پروفایل هنرجو توسط مستر' })
+  @ApiOkResponse({ description: 'پروفایل با موفقیت نمایش داد شد' })
+  @ApiNotFoundResponse({ description: 'هنرجویی با این مشخاصت یافت نشد' })
+  @ApiParam({ name: 'id', type: Number, example: 7 })
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   getById(@Req() req, @Param('id', ParseIntPipe) studentId: number) {
@@ -54,6 +81,17 @@ export class StudentController {
 
   // Create Student by Master
   @Post()
+  @ApiOperation({ summary: 'ایجاد هنرجو توسط مستر' })
+  @ApiCreatedResponse({ description: 'هنرجو ایجاد شد و تراکنش شهریه اولیه ثبت گردید' })
+  @ApiNotFoundResponse({
+    description: `
+    کمربند با این ایدی یافت نشد
+    پلن شهریه انتخاب شده معتبر نیست یا متعلق به شما نمی‌ باشد
+    `,
+  })
+  @ApiBadRequestResponse({ description: 'انتخاب پلن برای هنرجو الزامی است' })
+  @ApiForbiddenResponse({ description: 'شما به عنوان مربی باید ابتدا رشته ورزشی خود را مشخص کنید' })
+  @ApiBody({ type: CreateStudentDto })
   @Roles(Role.Master)
   @HttpCode(HttpStatus.CREATED)
   createStudent(@Req() req, @Body() createStudentDto: CreateStudentDto) {
@@ -62,6 +100,9 @@ export class StudentController {
 
   // See You Update Profile Just yourself student
   @Put('update/details')
+  @ApiOperation({ summary: 'بروزرسانی پروفایل توسط هنرجو' })
+  @ApiOkResponse({ description: 'پروفایل با موفقیت بروزرسانی شد' })
+  @ApiBody({ type: UpdateStudentDto })
   @Roles(Role.Student)
   @HttpCode(HttpStatus.OK)
   updateStudent(@Req() req, @Body() updateStudentDto: UpdateStudentDto) {
@@ -70,6 +111,11 @@ export class StudentController {
 
   // Update Student by Master
   @Put(':id')
+  @ApiOperation({ summary: 'بروزرسانی پروفایل هنرجو توسط مستر' })
+  @ApiOkResponse({ description: 'پروفایل هنرجو با موفقیت بروزرسانی شد' })
+  @ApiNotFoundResponse({ description: 'پلن جدید معتبر نیست یا متعلق به شما نیست' })
+  @ApiParam({ name: 'id', type: Number, example: 7 })
+  @ApiBody({ type: UpdateStudentDto })
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   updateStudentByMaster(
@@ -82,6 +128,10 @@ export class StudentController {
 
   // change status stduent
   @Put('changeStatus/:id')
+  @ApiOperation({ summary: 'تغییر وضعیت حساب کاربری هنرجو توسط مستر' })
+  @ApiOkResponse({ description: 'وضعیت حساب کاربری هنرچو با موفقیت انجام شد' })
+  @ApiParam({ name: 'id', type: Number, example: 7 })
+  @ApiBody({ type: UpdateStatusDto })
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   changeStatusAccount(
@@ -94,6 +144,9 @@ export class StudentController {
 
   // Delete Student by Master
   @Delete(':id')
+  @ApiOperation({ summary: 'حذف هنرجو توسط مستر' })
+  @ApiOkResponse({ description: 'هنرجو با موفقیت حذف شد' })
+  @ApiParam({ name: 'id', type: Number, example: 7 })
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
   deleteStudent(@Req() req, @Param('id', ParseIntPipe) studentId: number) {

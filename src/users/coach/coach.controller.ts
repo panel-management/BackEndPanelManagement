@@ -81,7 +81,7 @@ export class CoachController {
       'برای ساخت مربی، شما به عنوان استاد باید ابتدا رشته ورزشی خود را در پروفایل مشخص کنید',
   })
   @ApiExtraModels(CreateCoachDto)
-  @ApiConsumes('multipart/form-data')
+  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiBody({
     schema: {
       allOf: [
@@ -117,7 +117,7 @@ export class CoachController {
   @ApiOkResponse({ description: 'پروفایل با موفقیت بروزرسانی شد' })
   @ApiNotFoundResponse({ description: 'مربی با این مشخصات یافت نشد' })
   @ApiExtraModels(UpdateCoachDto)
-  @ApiConsumes('multipart/form-data')
+  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiBody({
     schema: {
       allOf: [
@@ -153,7 +153,7 @@ export class CoachController {
   @ApiOkResponse({ description: 'پروفایل مربی با موفقیت بروزرسانی شد' })
   @ApiNotFoundResponse({ description: 'مربی با این مشخصات یافت نشد' })
   @ApiExtraModels(UpdateCoachDto)
-  @ApiConsumes('multipart/form-data')
+  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiParam({ name: 'id', type: Number, example: 4 })
   @ApiBody({
     schema: {

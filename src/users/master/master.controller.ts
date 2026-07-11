@@ -87,7 +87,7 @@ export class MasterController {
   @ApiForbiddenResponse({ description: 'کاربر مورد نظر از نوع استاد نیست' })
   @ApiNotFoundResponse({ description: 'استادی با این مشخصات یافت نشد' })
   @ApiExtraModels(UpdateMasterDto)
-  @ApiConsumes('multipart/form-data')
+  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiBody({
     schema: {
       allOf: [
@@ -126,7 +126,7 @@ export class MasterController {
   @ApiForbiddenResponse({ description: 'کاربر مورد نظر از نوع استاد نیست' })
   @ApiNotFoundResponse({ description: 'استادی با این مشخصات یافت نشد' })
   @ApiExtraModels(UpdateMasterDto)
-  @ApiConsumes('multipart/form-data')
+  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiParam({ name: 'id', type: Number, example: 3 })
   @ApiBody({
     schema: {

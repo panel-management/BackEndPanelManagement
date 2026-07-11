@@ -398,7 +398,7 @@ export class FinancialsService {
 
     return {
       statusCode: HttpStatus.OK,
-      message: 'لیست پلن های با موفقیت یافت شد',
+      message: 'لیست پلن ها با موفقیت دریافت شد',
       data: planMaster,
     };
   }

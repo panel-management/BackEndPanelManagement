@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -40,7 +41,7 @@ import {
 export class StudentController {
   constructor(private readonly studentService: StudentService) {}
 
-  // get All Students for Master
+  // get all student by master
   @Get()
   @ApiOperation({
     summary: 'نمایش لیست هنرجو های مستر',
@@ -56,8 +57,8 @@ export class StudentController {
     return this.studentService.findAll(req.user.userId, pageQueryDto);
   }
 
-  // See You Profile Just yourself student
-  @Get('details')
+  // see profile student yourself
+  @Get('profile')
   @ApiOperation({ summary: 'نمایش پروفایل توسط هنرجو' })
   @ApiOkResponse({ description: 'پروفایل با موفقیت نمایش داد شد' })
   @ApiNotFoundResponse({ description: 'هنرجویی با این مشخاصت یافت نشد' })
@@ -67,8 +68,8 @@ export class StudentController {
     return this.studentService.getStudentById(req.user.userId);
   }
 
-  // See Student Profile by Id for Master
-  @Get(':id')
+  // see profile student by Master
+  @Get('profile/:id')
   @ApiOperation({ summary: 'نمایش پروفایل هنرجو توسط مستر' })
   @ApiOkResponse({ description: 'پروفایل با موفقیت نمایش داد شد' })
   @ApiNotFoundResponse({ description: 'هنرجویی با این مشخاصت یافت نشد' })
@@ -79,7 +80,7 @@ export class StudentController {
     return this.studentService.getById(studentId, req.user.userId);
   }
 
-  // Create Student by Master
+  // create student by master
   @Post()
   @ApiOperation({ summary: 'ایجاد هنرجو توسط مستر' })
   @ApiCreatedResponse({ description: 'هنرجو ایجاد شد و تراکنش شهریه اولیه ثبت گردید' })
@@ -98,8 +99,8 @@ export class StudentController {
     return this.studentService.createStudent(req.user.userId, createStudentDto);
   }
 
-  // See You Update Profile Just yourself student
-  @Put('update/details')
+  // update profile student yourself
+  @Patch('update/profile')
   @ApiOperation({ summary: 'بروزرسانی پروفایل توسط هنرجو' })
   @ApiOkResponse({ description: 'پروفایل با موفقیت بروزرسانی شد' })
   @ApiBody({ type: UpdateStudentDto })
@@ -109,8 +110,8 @@ export class StudentController {
     return this.studentService.updateStudentById(req.user.userId, updateStudentDto);
   }
 
-  // Update Student by Master
-  @Put(':id')
+  // update student by master
+  @Patch('update/:id')
   @ApiOperation({ summary: 'بروزرسانی پروفایل هنرجو توسط مستر' })
   @ApiOkResponse({ description: 'پروفایل هنرجو با موفقیت بروزرسانی شد' })
   @ApiNotFoundResponse({ description: 'پلن جدید معتبر نیست یا متعلق به شما نیست' })
@@ -126,7 +127,7 @@ export class StudentController {
     return this.studentService.updateById(studentId, req.user.userId, updateStudentDto);
   }
 
-  // change status stduent
+  // change status student by master
   @Put('changeStatus/:id')
   @ApiOperation({ summary: 'تغییر وضعیت حساب کاربری هنرجو توسط مستر' })
   @ApiOkResponse({ description: 'وضعیت حساب کاربری هنرچو با موفقیت انجام شد' })
@@ -142,7 +143,7 @@ export class StudentController {
     return this.studentService.changeStatusAccount(studentId, req.user.userId, updateStatusDto);
   }
 
-  // Delete Student by Master
+  // delete student by master
   @Delete(':id')
   @ApiOperation({ summary: 'حذف هنرجو توسط مستر' })
   @ApiOkResponse({ description: 'هنرجو با موفقیت حذف شد' })

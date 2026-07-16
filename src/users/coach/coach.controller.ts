@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Req,
@@ -37,6 +38,7 @@ import {
 export class CoachController {
   constructor(private readonly coachService: CoachService) {}
 
+  // get all coach by master
   @Get()
   @ApiOperation({ summary: 'نمایش لیست مربی ها برای مستر' })
   @ApiOkResponse({ description: 'لیست مربی ها با موفقیت دریافت شد' })
@@ -46,6 +48,7 @@ export class CoachController {
     return this.coachService.getCoach(req.user.userId);
   }
 
+  // see profile coach yourself
   @Get('profile')
   @ApiOperation({ summary: 'نمایش پروفایل مربی' })
   @ApiOkResponse({ description: 'پروفایل با موفقیت دریافت شد' })
@@ -56,7 +59,8 @@ export class CoachController {
     return this.coachService.getCoachProfile(req.user.userId);
   }
 
-  @Get(':id')
+  // see profile coach by master
+  @Get('profile/:id')
   @ApiOperation({ summary: 'نمایش پروفایل مربی برای مستر' })
   @ApiOkResponse({ description: 'پروفایل مربی با موفقیت نمایش داد شد' })
   @ApiNotFoundResponse({ description: 'مربی با این مشخصات یافت نشد' })
@@ -67,6 +71,7 @@ export class CoachController {
     return this.coachService.getCoachById(coachId, req.user.userId);
   }
 
+  // create coach by master
   @Post()
   @ApiOperation({ summary: 'ایجاد مربی توسط مستر' })
   @ApiCreatedResponse({ description: 'مربی با موفقیت ایجاد شد' })
@@ -81,7 +86,8 @@ export class CoachController {
     return this.coachService.createCoach(req.user.userId, createCoachDto);
   }
 
-  @Put('update/profile')
+  // update profile coach yourself
+  @Patch('update/profile')
   @ApiOperation({ summary: 'بروزرسانی پروفایل مربی' })
   @ApiOkResponse({ description: 'پروفایل با موفقیت بروزرسانی شد' })
   @ApiNotFoundResponse({ description: 'مربی با این مشخصات یافت نشد' })
@@ -92,7 +98,8 @@ export class CoachController {
     return this.coachService.updateCoachProfile(req.user.userId, updateCoachDto);
   }
 
-  @Put(':id')
+  // update profile coach by master
+  @Patch('update/:id')
   @ApiOperation({ summary: 'بروزرسانی پروفایل مربی توسط مستر' })
   @ApiOkResponse({ description: 'پروفایل مربی با موفقیت بروزرسانی شد' })
   @ApiNotFoundResponse({ description: 'مربی با این مشخصات یافت نشد' })

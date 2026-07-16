@@ -324,7 +324,7 @@ export class StudentService {
     message: string;
     data: UpdatedStudentData;
   }> {
-    await this.getById(studentId, masterId);
+    const existingStudent = await this.getById(studentId, masterId);
 
     const dataToUpdate: any = {
       fullName: dto.fullName,
@@ -342,9 +342,10 @@ export class StudentService {
 
     let newPlan: any = null;
     let nextDueDate: Date | null = null;
+    const isPlanChanged = dto.planId && dto.planId !== existingStudent.data.assignedPlan?.id;
 
-    if (dto.planId) {
-      newPlan = await this.financialsService.findPlanById(dto.planId);
+    if (isPlanChanged) {
+      newPlan = await this.financialsService.findPlanById(dto.planId as number);
       if (!newPlan || newPlan.masterId !== masterId) {
         throw new HttpException('پلن جدید معتبر نیست یا متعلق به شما نیست', HttpStatus.NOT_FOUND);
       }
@@ -360,18 +361,17 @@ export class StudentService {
 
     try {
       const updatedStudent = await this.prisma.$transaction(async (tx) => {
-        if (dto.planId) {
-          // await tx.transaction.updateMany({
-          //   where: {
-          //     studentId,
-          //     type: TransactionType.FEE,
-          //     status: TransactionStatus.PENDING,
-          //   },
-          //   data: {
-          //     status: TransactionStatus.UNPAID,
-          //   },
-          // });
-
+        if (isPlanChanged) {
+          await tx.transaction.updateMany({
+            where: {
+              studentId,
+              type: TransactionType.FEE,
+              status: TransactionStatus.PENDING,
+            },
+            data: {
+              status: TransactionStatus.UNPAID,
+            },
+          });
           await tx.transaction.create({
             data: {
               type: TransactionType.FEE,
@@ -406,7 +406,7 @@ export class StudentService {
         });
       });
 
-      if (dto.planId && updatedStudent.phoneNumber) {
+      if (isPlanChanged && updatedStudent.phoneNumber) {
         await this.smsService.sendMessageToUser(
           updatedStudent.phoneNumber,
           `هنرجوی عزیز ${updatedStudent.fullName} سلام

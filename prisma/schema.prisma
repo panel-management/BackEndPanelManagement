@@ -99,7 +99,6 @@ model users {
   certificates           String?
   age                    Int?
   birthDate              DateTime?
-  image                  String?
   // Emergency & Health
   phoneNumberEmergency   String?
   underSupervisionDoctor Boolean?     @default(false)
@@ -184,7 +183,6 @@ model Plan {
   description    String
   price          Decimal @db.Decimal(12, 2)
   durationInDays Int
-  isDefault      Boolean @default(false)
 
   masterId Int
   master   users @relation("MasterPlans", fields: [masterId], references: [user_id], onDelete: Cascade)

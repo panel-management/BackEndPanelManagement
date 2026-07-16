@@ -4,9 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { MasterPlanType, SubscriptionPaymentStatus } from '@prisma/client';
 import { FinancialsService } from 'src/financials/financials.service';
 import { UpdateMasterDto } from './dto/update-master.dto';
-import { SmsService } from 'src/sms/sms.service';
 import { UpdateStatusDto } from 'src/common/dto/updateStatus.dto';
-import { fileUtils } from 'src/common/utils/file-upload.util';
 
 type UpdatedMasterData = {
   fullName: string | null;
@@ -23,7 +21,6 @@ export class MasterService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly financialsService: FinancialsService,
-    private readonly smsService: SmsService,
   ) {}
 
   // get master
@@ -92,7 +89,6 @@ export class MasterService {
         fullName: true,
         phoneNumber: true,
         nationalCode: true,
-        image: true,
         isActive: true,
         age: true,
         birthDate: true,
@@ -112,7 +108,7 @@ export class MasterService {
           orderBy: {
             createdAt: 'desc',
           },
-          take: 20
+          take: 20,
         },
         createdAt: true,
         updatedAt: true,
@@ -144,7 +140,6 @@ export class MasterService {
         fullName: true,
         phoneNumber: true,
         nationalCode: true,
-        image: true,
         isActive: true,
         age: true,
         birthDate: true,
@@ -165,7 +160,7 @@ export class MasterService {
           orderBy: {
             createdAt: 'desc',
           },
-          take: 20
+          take: 20,
         },
         createdAt: true,
         updatedAt: true,
@@ -277,19 +272,12 @@ export class MasterService {
   async updateMaster(
     masterId: number,
     dto: UpdateMasterDto,
-    file?: Express.Multer.File,
   ): Promise<{
     statusCode: number;
     message: string;
     data: UpdatedMasterData;
   }> {
-    const master = await this.getMasterById(masterId);
-
-    let imageUrl: string | undefined = undefined;
-    if (file) {
-      fileUtils.deleteFile(master.data.image);
-      imageUrl = fileUtils.createImageUrl(file.filename, 'masters');
-    }
+    await this.getMasterById(masterId);
 
     const updateMaster = await this.prisma.users.update({
       where: { user_id: masterId, type: Role.Master },
@@ -302,7 +290,6 @@ export class MasterService {
         history: dto.history,
         certificates: dto.certificates,
         ...(dto.sportId && { sportId: dto.sportId }),
-        ...(imageUrl && { image: imageUrl }),
       },
       select: {
         user_id: true,
@@ -315,7 +302,6 @@ export class MasterService {
         certificates: true,
         sport: true,
         sportId: true,
-        image: true,
       },
     });
 
@@ -356,7 +342,7 @@ export class MasterService {
 
   // delete account master
   async deleteMaster(masterId: number): Promise<{ statusCode: number; message: string }> {
-    const master = await this.getMasterById(masterId);
+    await this.getMasterById(masterId);
 
     await this.prisma.$transaction(async (tx) => {
       await tx.users.updateMany({
@@ -381,10 +367,6 @@ export class MasterService {
 
       await tx.users.delete({ where: { user_id: masterId, type: Role.Master } });
     });
-
-    if (master.data.image) {
-      fileUtils.deleteFile(master.data.image);
-    }
 
     return {
       statusCode: HttpStatus.OK,

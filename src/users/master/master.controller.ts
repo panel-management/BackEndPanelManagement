@@ -9,16 +9,13 @@ import {
   ParseIntPipe,
   Put,
   Req,
-  UploadedFile,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import { MasterService } from './master.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/auth/enums/role.enum';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { UpdateMasterDto } from './dto/update-master.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { AssignMasterPlanDto } from './dto/assign-master-plan.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdateStatusDto } from 'src/common/dto/updateStatus.dto';
@@ -26,14 +23,11 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
-  ApiConsumes,
-  ApiExtraModels,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
-  getSchemaPath,
 } from '@nestjs/swagger';
 
 @Controller('master')
@@ -86,36 +80,11 @@ export class MasterController {
   @ApiOkResponse({ description: 'پروفایل با موفقیت بروزرسانی شد' })
   @ApiForbiddenResponse({ description: 'کاربر مورد نظر از نوع استاد نیست' })
   @ApiNotFoundResponse({ description: 'استادی با این مشخصات یافت نشد' })
-  @ApiExtraModels(UpdateMasterDto)
-  @ApiConsumes('multipart/form-data', 'application/json')
-  @ApiBody({
-    schema: {
-      allOf: [
-        { $ref: getSchemaPath(UpdateMasterDto) },
-        {
-          type: 'object',
-          properties: {
-            imageFile: {
-              type: 'string',
-              format: 'binary',
-              nullable: true,
-              description: 'اختیاری',
-            },
-          },
-          required: [],
-        },
-      ],
-    },
-  })
+  @ApiBody({ type: UpdateMasterDto })
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor('imageFile'))
-  updateMasterByAdmin(
-    @Req() req,
-    @Body() updateMasterDto: UpdateMasterDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.masterService.updateMaster(req.user.userId, updateMasterDto, file);
+  updateMasterByAdmin(@Req() req, @Body() updateMasterDto: UpdateMasterDto) {
+    return this.masterService.updateMaster(req.user.userId, updateMasterDto);
   }
 
   // See All Update Profile Master Just Admin
@@ -125,37 +94,15 @@ export class MasterController {
   @ApiOkResponse({ description: 'پروفایل مستر با موفقیت بروزرسانی شد' })
   @ApiForbiddenResponse({ description: 'کاربر مورد نظر از نوع استاد نیست' })
   @ApiNotFoundResponse({ description: 'استادی با این مشخصات یافت نشد' })
-  @ApiExtraModels(UpdateMasterDto)
-  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiParam({ name: 'id', type: Number, example: 3 })
-  @ApiBody({
-    schema: {
-      allOf: [
-        { $ref: getSchemaPath(UpdateMasterDto) },
-        {
-          type: 'object',
-          properties: {
-            imageFile: {
-              type: 'string',
-              format: 'binary',
-              nullable: true,
-              description: "اختیاری"
-            },
-          },
-          required: [],
-        },
-      ],
-    },
-  })
+  @ApiBody({ type: UpdateMasterDto })
   @Roles(Role.Admin)
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor('imageFile'))
   updateMaster(
     @Param('id', ParseIntPipe) masterId: number,
     @Body() updateMasterDto: UpdateMasterDto,
-    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.masterService.updateMaster(masterId, updateMasterDto, file);
+    return this.masterService.updateMaster(masterId, updateMasterDto);
   }
 
   // change status master for admin

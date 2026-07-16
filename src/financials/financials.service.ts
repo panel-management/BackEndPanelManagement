@@ -32,7 +32,7 @@ export class FinancialsService {
     private readonly smsService: SmsService,
     @Inject(forwardRef(() => UsersService))
     private readonly userService: UsersService,
-  ) { }
+  ) {}
 
   private readonly logger = new Logger(FinancialsService.name);
 
@@ -63,8 +63,8 @@ export class FinancialsService {
 
       const daysSinceLastFee = student.lastFeeGenerated
         ? Math.floor(
-          (now.getTime() - new Date(student.lastFeeGenerated).getTime()) / (1000 * 60 * 60 * 24),
-        )
+            (now.getTime() - new Date(student.lastFeeGenerated).getTime()) / (1000 * 60 * 60 * 24),
+          )
         : 0;
 
       if (
@@ -235,24 +235,14 @@ export class FinancialsService {
       throw new HttpException('فقط استاد می‌تواند پلن ایجاد کند', HttpStatus.FORBIDDEN);
     }
 
-    const plan = await this.prisma.$transaction(async (tx) => {
-      if (createPlanDto.isDefault) {
-        await tx.plan.updateMany({
-          where: { masterId: masterId, isDefault: true },
-          data: { isDefault: false },
-        });
-      }
-
-      return await tx.plan.create({
-        data: {
-          masterId: masterId,
-          name: createPlanDto.name,
-          description: createPlanDto.description,
-          price: createPlanDto.price,
-          durationInDays: createPlanDto.durationInDays,
-          isDefault: createPlanDto.isDefault,
-        },
-      });
+    const plan = await this.prisma.plan.create({
+      data: {
+        masterId: masterId,
+        name: createPlanDto.name,
+        description: createPlanDto.description,
+        price: createPlanDto.price,
+        durationInDays: createPlanDto.durationInDays,
+      },
     });
 
     return {
@@ -287,7 +277,6 @@ export class FinancialsService {
         description: true,
         durationInDays: true,
         price: true,
-        isDefault: true,
         transactions: true,
         createdAt: true,
       },
@@ -373,10 +362,7 @@ export class FinancialsService {
   // list all plan active and disable
   async findAllMasterPlansForAdmin() {
     const planMaster = await this.prisma.masterPlan.findMany({
-      orderBy: [
-        { createdAt: "asc" },
-        { updatedAt: "asc" }
-      ]
+      orderBy: [{ createdAt: 'asc' }, { updatedAt: 'asc' }],
     });
 
     return {
@@ -390,10 +376,7 @@ export class FinancialsService {
   async findActiveMasterPlans() {
     const planMaster = await this.prisma.masterPlan.findMany({
       where: { isActive: true },
-      orderBy: [
-        { createdAt: "asc" },
-        { updatedAt: "asc" }
-      ]
+      orderBy: [{ createdAt: 'asc' }, { updatedAt: 'asc' }],
     });
 
     return {

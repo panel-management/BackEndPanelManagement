@@ -1,6 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
 
 export class CreatePlanDto {
   @ApiProperty({ example: 'طرح خصوصی' })
@@ -26,9 +26,4 @@ export class CreatePlanDto {
   @Type(() => Number)
   @Min(1)
   durationInDays: number;
-
-  @ApiPropertyOptional({ example: false, type: Boolean })
-  @IsBoolean()
-  @IsOptional()
-  isDefault?: boolean;
 }

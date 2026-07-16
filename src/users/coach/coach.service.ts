@@ -5,7 +5,6 @@ import { UpdateCoachDto } from './dto/update-coach.dto';
 import { UpdateStatusDto } from 'src/common/dto/updateStatus.dto';
 import { Role } from 'src/auth/enums/role.enum';
 import { Prisma } from '@prisma/client';
-import { fileUtils } from 'src/common/utils/file-upload.util';
 
 type UpdatedCoachData = {
   fullName: string | null;
@@ -32,7 +31,6 @@ export class CoachService {
         age: true,
         history: true,
         certificates: true,
-        image: true,
         isActive: true,
         type: true,
         sport: true,
@@ -64,7 +62,6 @@ export class CoachService {
         age: true,
         history: true,
         certificates: true,
-        image: true,
         isActive: true,
         type: true,
         sport: true,
@@ -101,7 +98,6 @@ export class CoachService {
         age: true,
         history: true,
         certificates: true,
-        image: true,
         isActive: true,
         type: true,
         masterId: true,
@@ -127,11 +123,11 @@ export class CoachService {
   }
 
   // create coach for master
-  async createCoach(masterId: number, dto: CreateCoachDto, file?: Express.Multer.File) {
+  async createCoach(masterId: number, dto: CreateCoachDto) {
     try {
       const master = await this.prisma.users.findUnique({
         where: { user_id: masterId },
-        include: { sport: true },
+        select: { sport: true },
       });
 
       if (!master || !master.sport) {
@@ -139,11 +135,6 @@ export class CoachService {
           'برای ساخت مربی، شما به عنوان استاد باید ابتدا رشته ورزشی خود را در پروفایل مشخص کنید',
           HttpStatus.FORBIDDEN,
         );
-      }
-
-      let imageUrl: string | undefined = undefined;
-      if (file) {
-        imageUrl = fileUtils.createImageUrl(file.filename, 'coachs');
       }
 
       const newCoach = await this.prisma.users.create({
@@ -155,7 +146,6 @@ export class CoachService {
           age: dto.age,
           history: dto.history,
           certificates: dto.certificates,
-          image: imageUrl,
           type: Role.Coach,
           sport: { connect: { id: master.sport.id } },
           master: { connect: { user_id: masterId } },
@@ -167,7 +157,6 @@ export class CoachService {
           phoneNumber: true,
           birthDate: true,
           age: true,
-          image: true,
           type: true,
           sport: true,
         },
@@ -196,19 +185,12 @@ export class CoachService {
   async updateCoachProfile(
     coachId: number,
     dto: UpdateCoachDto,
-    file?: Express.Multer.File,
   ): Promise<{
     statusCode: number;
     message: string;
     data: UpdatedCoachData;
   }> {
-    const coach = await this.getCoachProfile(coachId);
-
-    let imageUrl: string | undefined = undefined;
-    if (file) {
-      fileUtils.deleteFile(coach.data.image);
-      imageUrl = fileUtils.createImageUrl(file.filename, 'coachs');
-    }
+    await this.getCoachProfile(coachId);
 
     const updateCoach = await this.prisma.users.update({
       where: { user_id: coachId, type: Role.Coach },
@@ -220,7 +202,6 @@ export class CoachService {
         age: dto.age,
         history: dto.history,
         certificates: dto.certificates,
-        ...(imageUrl && { image: imageUrl }),
       },
       select: {
         user_id: true,
@@ -231,7 +212,6 @@ export class CoachService {
         age: true,
         history: true,
         certificates: true,
-        image: true,
       },
     });
 
@@ -247,19 +227,12 @@ export class CoachService {
     coachId: number,
     masterId: number,
     dto: UpdateCoachDto,
-    file?: Express.Multer.File,
   ): Promise<{
     statusCode: number;
     message: string;
     data: UpdatedCoachData;
   }> {
-    const coach = await this.getCoachById(coachId, masterId);
-
-    let imageUrl: string | undefined = undefined;
-    if (file) {
-      fileUtils.deleteFile(coach.data.image);
-      imageUrl = fileUtils.createImageUrl(file.filename, 'coachs');
-    }
+    await this.getCoachById(coachId, masterId);
 
     const updateCoach = await this.prisma.users.update({
       where: { user_id: coachId, type: Role.Coach },
@@ -270,8 +243,7 @@ export class CoachService {
         birthDate: dto.birthDate,
         age: dto.age,
         history: dto.history,
-        certificates: dto.certificates,
-        ...(imageUrl && { image: imageUrl }),
+        certificates: dto.certificates
       },
       select: {
         user_id: true,
@@ -282,7 +254,6 @@ export class CoachService {
         age: true,
         history: true,
         certificates: true,
-        image: true,
       },
     });
 
@@ -327,15 +298,11 @@ export class CoachService {
     coachId: number,
     masterId: number,
   ): Promise<{ statusCode: number; message: string }> {
-    const coach = await this.getCoachById(coachId, masterId);
+    await this.getCoachById(coachId, masterId);
 
     await this.prisma.users.delete({
       where: { user_id: coachId, type: Role.Coach },
     });
-
-    if (coach.data.image) {
-      fileUtils.deleteFile(coach.data.image);
-    }
 
     return { statusCode: HttpStatus.OK, message: 'مربی با موفقیت حذف شد' };
   }

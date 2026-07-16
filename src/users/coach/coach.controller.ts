@@ -10,9 +10,7 @@ import {
   Post,
   Put,
   Req,
-  UploadedFile,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import { CoachService } from './coach.service';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -20,21 +18,17 @@ import { Role } from 'src/auth/enums/role.enum';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CreateCoachDto } from './dto/create-coach.dto';
 import { UpdateCoachDto } from './dto/update-coach.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdateStatusDto } from 'src/common/dto/updateStatus.dto';
 import {
   ApiBearerAuth,
   ApiBody,
-  ApiConsumes,
   ApiCreatedResponse,
-  ApiExtraModels,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
-  getSchemaPath,
 } from '@nestjs/swagger';
 
 @Controller('coach')
@@ -80,110 +74,38 @@ export class CoachController {
     description:
       'برای ساخت مربی، شما به عنوان استاد باید ابتدا رشته ورزشی خود را در پروفایل مشخص کنید',
   })
-  @ApiExtraModels(CreateCoachDto)
-  @ApiConsumes('multipart/form-data', 'application/json')
-  @ApiBody({
-    schema: {
-      allOf: [
-        { $ref: getSchemaPath(CreateCoachDto) },
-        {
-          type: 'object',
-          properties: {
-            imageFile: {
-              type: 'string',
-              format: 'binary',
-              nullable: true,
-              description: 'اختیاری',
-            },
-          },
-          required: [],
-        },
-      ],
-    },
-  })
+  @ApiBody({ type: CreateCoachDto })
   @Roles(Role.Master)
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor('imageFile'))
-  createCoach(
-    @Req() req,
-    @Body() createCoachDto: CreateCoachDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.coachService.createCoach(req.user.userId, createCoachDto, file);
+  createCoach(@Req() req, @Body() createCoachDto: CreateCoachDto) {
+    return this.coachService.createCoach(req.user.userId, createCoachDto);
   }
 
   @Put('update/profile')
   @ApiOperation({ summary: 'بروزرسانی پروفایل مربی' })
   @ApiOkResponse({ description: 'پروفایل با موفقیت بروزرسانی شد' })
   @ApiNotFoundResponse({ description: 'مربی با این مشخصات یافت نشد' })
-  @ApiExtraModels(UpdateCoachDto)
-  @ApiConsumes('multipart/form-data', 'application/json')
-  @ApiBody({
-    schema: {
-      allOf: [
-        { $ref: getSchemaPath(UpdateCoachDto) },
-        {
-          type: 'object',
-          properties: {
-            imageFile: {
-              type: 'string',
-              format: 'binary',
-              nullable: true,
-              description: 'اختیاری',
-            },
-          },
-          required: [],
-        },
-      ],
-    },
-  })
+  @ApiBody({ type: UpdateCoachDto })
   @Roles(Role.Coach)
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor('imageFile'))
-  updateCoachProfile(
-    @Req() req,
-    @Body() updateCoachDto: UpdateCoachDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.coachService.updateCoachProfile(req.user.userId, updateCoachDto, file);
+  updateCoachProfile(@Req() req, @Body() updateCoachDto: UpdateCoachDto) {
+    return this.coachService.updateCoachProfile(req.user.userId, updateCoachDto);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'بروزرسانی پروفایل مربی توسط مستر' })
   @ApiOkResponse({ description: 'پروفایل مربی با موفقیت بروزرسانی شد' })
   @ApiNotFoundResponse({ description: 'مربی با این مشخصات یافت نشد' })
-  @ApiExtraModels(UpdateCoachDto)
-  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiParam({ name: 'id', type: Number, example: 4 })
-  @ApiBody({
-    schema: {
-      allOf: [
-        { $ref: getSchemaPath(UpdateCoachDto) },
-        {
-          type: 'object',
-          properties: {
-            imageFile: {
-              type: 'string',
-              format: 'binary',
-              nullable: true,
-              description: 'اختیاری',
-            },
-          },
-          required: [],
-        },
-      ],
-    },
-  })
+  @ApiBody({ type: UpdateCoachDto })
   @Roles(Role.Master)
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor('imageFile'))
   updateCoach(
     @Req() req,
     @Param('id', ParseIntPipe) coachId: number,
     @Body() updateCoachDto: UpdateCoachDto,
-    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.coachService.updateCoach(coachId, req.user.userId, updateCoachDto, file);
+    return this.coachService.updateCoach(coachId, req.user.userId, updateCoachDto);
   }
 
   @Put('changeStatus/:id')

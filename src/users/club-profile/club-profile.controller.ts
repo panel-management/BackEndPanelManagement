@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { ClubProfileService } from './club-profile.service';
@@ -42,7 +42,7 @@ export class ClubProfileController {
     return this.clubProfile.completeClubProfile(req.user.userId, completeProfileDto);
   }
 
-  @Post('update-profile-club')
+  @Patch('update-profile-club')
   @ApiOperation({ summary: "ویرایش و بروزرسانی پروفایل باشگاه" })
   @ApiOkResponse({ description: "پروفایل باشگاه با موفقیت بروزرسانی شد" })
   @ApiBody({ type: UpdateProfileDto })

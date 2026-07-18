@@ -8,6 +8,7 @@ import {
   Param,
   ParseFilePipe,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -88,7 +89,7 @@ export class FinancialsController {
   }
 
   // Update Plan Student Payment
-  @Put('plans/:id')
+  @Patch('plans/update/:id')
   @ApiOperation({ summary: 'بروزرسانی پلن های باشگاه مستر' })
   @ApiOkResponse({ description: 'پلن با موفقیت بروزرسانی شد' })
   @ApiNotFoundResponse({
@@ -350,7 +351,7 @@ export class FinancialsController {
     return this.financialsService.findMasterPlanById(id);
   }
 
-  @Put('master-plans/:id')
+  @Patch('master-plans/update/:id')
   @ApiOperation({ summary: 'بروزرسانی پلن ها مستر توسط ادمین' })
   @ApiOkResponse({ description: 'بروزرسانی با موفقیت انجام شد' })
   @ApiNotFoundResponse({ description: 'پلن یافت نشد لطف مجدد امتحان کنید' })

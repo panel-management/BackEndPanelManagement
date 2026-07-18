@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Put,
   Req,
   UseGuards,
@@ -36,7 +37,7 @@ import {
 export class MasterController {
   constructor(private readonly masterService: MasterService) {}
 
-  // get master
+  // get all master
   @Get()
   @ApiOperation({ summary: 'نمایش لیست مستر برای ادمین' })
   @ApiOkResponse({ description: 'لیست استاد های باشگاه با موفقیت دریافت شد' })
@@ -46,9 +47,8 @@ export class MasterController {
     return this.masterService.getMaster();
   }
 
-  // See You Profile Just yourself master
-  // get profile himself master
-  @Get('details')
+  // see profile master himself
+  @Get('profile')
   @ApiOperation({ summary: 'نمایش پروفایل مستر' })
   @ApiOkResponse({ description: 'پروفایل با موفقیت نمایش داده شد' })
   @ApiForbiddenResponse({ description: 'کاربر مورد نظر از نوع استاد نیست' })
@@ -59,9 +59,8 @@ export class MasterController {
     return this.masterService.getMasterById(req.user.userId);
   }
 
-  // See All Profile Master Just Admin
-  // get profile master for admin
-  @Get(':id')
+  // see profile master by admin
+  @Get('profile/:id')
   @ApiOperation({ summary: 'نمایش پروفایل مستر برای ادمین' })
   @ApiOkResponse({ description: 'پروفایل با موفقیت نمایش داده شد' })
   @ApiForbiddenResponse({ description: 'کاربر مورد نظر از نوع استاد نیست' })
@@ -73,9 +72,8 @@ export class MasterController {
     return this.masterService.getMasterByIdSeeAdmin(masterId);
   }
 
-  // See You Update Profile Just yourself master
-  // update profile himself master
-  @Put('update/details')
+  // update profile master himself
+  @Patch('update/profile')
   @ApiOperation({ summary: 'بروزرسانی پروفایل مستر' })
   @ApiOkResponse({ description: 'پروفایل با موفقیت بروزرسانی شد' })
   @ApiForbiddenResponse({ description: 'کاربر مورد نظر از نوع استاد نیست' })
@@ -87,9 +85,8 @@ export class MasterController {
     return this.masterService.updateMaster(req.user.userId, updateMasterDto);
   }
 
-  // See All Update Profile Master Just Admin
-  // update profile master for admin
-  @Put('update/:id')
+  // update profile master by admin
+  @Patch('update/:id')
   @ApiOperation({ summary: 'بروزرسانی پروفایل مستر برای ادمین' })
   @ApiOkResponse({ description: 'پروفایل مستر با موفقیت بروزرسانی شد' })
   @ApiForbiddenResponse({ description: 'کاربر مورد نظر از نوع استاد نیست' })
@@ -105,7 +102,7 @@ export class MasterController {
     return this.masterService.updateMaster(masterId, updateMasterDto);
   }
 
-  // change status master for admin
+  // change status master by admin
   @Put('changeStatus/:id')
   @ApiOperation({ summary: 'تغییر وضعیت اکانت مستر توسط ادمین' })
   @ApiOkResponse({ description: 'وضعیت اکانت مستر با موفقیت انجام شد' })
@@ -151,7 +148,7 @@ export class MasterController {
     return this.masterService.assignPlanToMaster(req.user.userId, assignDto.planId);
   }
 
-  // delete account master
+  // delete account master by admin
   @Delete(':id')
   @ApiOperation({ summary: 'حذف کامل اکانت مستر توسط ادمین' })
   @ApiOkResponse({ description: 'استاد و تمامی اطلاعات وابسته با موفقیت حذف شدند' })

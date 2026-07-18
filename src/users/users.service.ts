@@ -1,20 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import {
-  SubscriptionPaymentStatus,
-  TransactionStatus,
-  TransactionType,
-  users,
-} from '@prisma/client';
+import { SubscriptionPaymentStatus, TransactionStatus, TransactionType } from '@prisma/client';
 import { Role } from 'src/auth/enums/role.enum';
-
-type profileData = {
-  fullName: string;
-  phoneNumber: string;
-  nationalCode: string;
-  sportId: number;
-  type: number;
-};
 
 @Injectable()
 export class UsersService {
@@ -291,62 +278,5 @@ export class UsersService {
         },
       };
     }
-  }
-
-  async findByPhoneNumber(phoneNumber: string): Promise<users | null> {
-    return this.prisma.users.findUnique({
-      where: { phoneNumber },
-    });
-  }
-
-  async findById(userId: number): Promise<users | null> {
-    return this.prisma.users.findUnique({
-      where: { user_id: userId },
-    });
-  }
-
-  async createUser(phoneNumber: string): Promise<users> {
-    return this.prisma.users.create({
-      data: {
-        phoneNumber,
-      },
-    });
-  }
-
-  async updateProfile(userId: number, profileData: profileData): Promise<users> {
-    const existingUser = await this.prisma.users.findFirst({
-      where: {
-        OR: [{ nationalCode: profileData.nationalCode }, { phoneNumber: profileData.phoneNumber }],
-        NOT: { user_id: userId },
-      },
-    });
-
-    if (existingUser) {
-      if (existingUser.nationalCode === profileData.nationalCode) {
-        throw new HttpException(
-          'کدملی تکراری است لطفا کدملی صحیح وارد کنید',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-      if (existingUser.phoneNumber === profileData.phoneNumber) {
-        throw new HttpException(
-          'شماره تلفن تکراری است لطفا شماره تلفن صحیح وارد کنید',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
-
-    return this.prisma.users.update({
-      where: { user_id: userId },
-      data: {
-        fullName: profileData.fullName,
-        phoneNumber: profileData.phoneNumber,
-        nationalCode: profileData.nationalCode,
-        ...(profileData.sportId && {
-          sport: { connect: { id: profileData.sportId } },
-        }),
-        type: profileData.type,
-      },
-    });
   }
 }

@@ -96,20 +96,13 @@ export class MasterService {
         certificates: true,
         sport: true,
         masterPlan: true,
-        students: {
-          select: {
-            user_id: true,
-            fullName: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
         subscriptionPayments: {
           orderBy: {
             createdAt: 'desc',
           },
           take: 20,
         },
+        _count: { select: { students: true } },
         createdAt: true,
         updatedAt: true,
       },
@@ -147,21 +140,13 @@ export class MasterService {
         certificates: true,
         sport: true,
         masterPlan: true,
-        students: {
-          select: {
-            user_id: true,
-            fullName: true,
-            currentBelt: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
         subscriptionPayments: {
           orderBy: {
             createdAt: 'desc',
           },
           take: 20,
         },
+        _count: { select: { students: true } },
         createdAt: true,
         updatedAt: true,
       },

@@ -78,7 +78,7 @@ async function bootstrap() {
   };
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('/docs', app, documentFactory, configSwagger);
+  SwaggerModule.setup('/v1/docs', app, documentFactory, configSwagger);
 
   await app.listen(3000);
 }

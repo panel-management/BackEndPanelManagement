@@ -27,7 +27,7 @@ import { join } from 'path';
     ThrottlerModule.forRoot({
       throttlers: [
         {
-          ttl: 60,
+          ttl: 10,
           limit: 10,
         },
       ],

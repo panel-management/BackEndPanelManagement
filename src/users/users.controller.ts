@@ -38,21 +38,21 @@ export class UsersController {
     summary: 'نمایش وضعیت پلن کاربر',
     description: `
     Admin Plan:
-      userType: 'ADMIN',
+      userType: 0,
       isActive: true,
       isAdmin: true,
     Master Plan:
-      userType: 'MASTER',
+      userType: 1,
       isActive: false,
       noPlan: true,
       isPending: true,
       needsPayment: true,
       isExpired: true,
     Coach Plan:
-      userType: 'COACH',
+      userType: 2,
       isActive: true,
     Student Plan:
-      userType: 'STUDENT',
+      userType: 3,
       isActive: false,
       noPlan: true,
       isExpired: true,

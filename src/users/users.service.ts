@@ -75,7 +75,7 @@ export class UsersService {
       return {
         statusCode: HttpStatus.OK,
         message: 'شما دسترسی ادمین دارید',
-        userType: 'ADMIN',
+        userType: Role.Admin,
         isActive: true,
         isAdmin: true,
       };
@@ -86,7 +86,7 @@ export class UsersService {
         return {
           statusCode: HttpStatus.OK,
           message: 'شما در حال حاضر هیچ پلن فعالی ندارید',
-          userType: 'MASTER',
+          userType: Role.Admin,
           isActive: false,
           noPlan: true,
         };
@@ -106,7 +106,7 @@ export class UsersService {
         return {
           statusCode: HttpStatus.ACCEPTED,
           message: 'رسید پرداخت شما در حال بررسی است. لطفاً صبر کنید تا توسط ادمین تایید شود',
-          userType: 'MASTER',
+          userType: Role.Master,
           isActive: false,
           isPending: true,
           data: {
@@ -120,7 +120,7 @@ export class UsersService {
         return {
           statusCode: HttpStatus.ACCEPTED,
           message: `شما پلن ${plan.name} را انتخاب کرده‌اید. برای فعال‌سازی، لطفاً هزینه ${Number(plan.price).toLocaleString('fa-IR') || '0'} تومان را پرداخت و رسید را ارسال کنید`,
-          userType: 'MASTER',
+          userType: Role.Master,
           isActive: false,
           needsPayment: true,
           data: {
@@ -138,7 +138,7 @@ export class UsersService {
         return {
           statusCode: HttpStatus.FORBIDDEN,
           message: 'پلن شما منقضی شده است. لطفاً پلن جدیدی انتخاب کنید',
-          userType: 'MASTER',
+          userType: Role.Master,
           isActive: false,
           isExpired: true,
           data: {
@@ -153,7 +153,7 @@ export class UsersService {
       return {
         statusCode: HttpStatus.OK,
         message: 'وضعیت پلن با موفقیت دریافت شد',
-        userType: 'MASTER',
+        userType: Role.Master,
         isActive: true,
         data: {
           planName: plan.name,
@@ -168,7 +168,7 @@ export class UsersService {
       return {
         statusCode: HttpStatus.OK,
         message: 'مربی بدون پلن ؟؟؟',
-        userType: 'COACH',
+        userType: Role.Coach,
         isActive: true,
       };
     }
@@ -178,7 +178,7 @@ export class UsersService {
         return {
           statusCode: HttpStatus.OK,
           message: 'شما هنوز به پلنی اختصاص داده نشده‌اید',
-          userType: 'STUDENT',
+          userType: Role.Student,
           isActive: false,
           noPlan: true,
         };
@@ -194,7 +194,7 @@ export class UsersService {
         return {
           statusCode: HttpStatus.OK,
           message: 'پلن شما هنوز فعال نشده است',
-          userType: 'STUDENT',
+          userType: Role.Student,
           isActive: false,
           plan: {
             name: plan.name,
@@ -212,7 +212,7 @@ export class UsersService {
         return {
           statusCode: HttpStatus.FORBIDDEN,
           message: 'پلن شما منقضی شده است. لطفاً با مدیر باشگاه تماس بگیرید',
-          userType: 'STUDENT',
+          userType: Role.Student,
           isActive: false,
           isExpired: true,
           plan: {
@@ -240,7 +240,7 @@ export class UsersService {
           message: isOverdue
             ? `شما ${unpaidFees.length} شهریه پرداخت نشده دارید. لطفاً در اسرع وقت پرداخت کنید`
             : `شما شهریه ${plan.name} را پرداخت نکرده‌اید. لطفاً در اسرع وقت پرداخت کنید`,
-          userType: 'STUDENT',
+          userType: Role.Student,
           isOverdue: isOverdue,
           isActive: false,
           isPending: true,
@@ -266,7 +266,7 @@ export class UsersService {
         message: isExpiringSoon
           ? `پلن شما ${timeLeftMessage} به پایان می‌رسد`
           : 'وضعیت پلن با موفقیت دریافت شد',
-        userType: 'STUDENT',
+        userType: Role.Student,
         isExpiringSoon: isExpiringSoon,
         isActive: true,
         data: {
